@@ -67,12 +67,14 @@ This design ensures scalability, modularity, and clean separation of concerns.
 
 ## 📁 Project Structure
 
+```
 src/
-├── assets/       # Static assets
-├── components/   # Reusable UI components
-├── hooks/        # Custom React hooks
-├── lib/          # Business logic and utilities
-└── routes/       # Application routing
+  assets/       # Static assets
+  components/   # Reusable UI components
+  hooks/        # Custom React hooks
+  lib/          # Business logic and utilities
+  routes/       # Application routing
+```
 
 ## 🛠️ Setup
 
