@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MOCK_REQUESTS, type RequestStatus } from "@/lib/mock-requests";
-import { Calendar, Clock, MapPin, Users2, ArrowRight } from "lucide-react";
+import { Calendar, Clock, MapPin, Users2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -38,14 +38,9 @@ function DashboardPage() {
     <div className="min-h-screen bg-background">
       <SiteNav />
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground md:text-4xl">My Reservation Requests</h1>
-            <p className="mt-2 text-muted-foreground">Track status and manage your CEA event submissions.</p>
-          </div>
-          <Link to="/reserve" className="inline-flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant transition-smooth hover:opacity-95">
-            New Reservation <ArrowRight className="h-4 w-4" />
-          </Link>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl">My Reservation Requests</h1>
+          <p className="mt-2 text-muted-foreground">Track status and manage your CEA event submissions.</p>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
