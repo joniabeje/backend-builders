@@ -8,6 +8,11 @@ Backend Builders is a web-based event reservation and decision support system de
 
 The platform transforms a manual, form-based reservation process into an intelligent system that validates requests in real time, assists users during event planning, and helps administrators efficiently manage approvals and campus resources.
 
+## 🔗 Preview
+
+Group 2 project link:  
+https://id-preview--4f0e361e-9ccb-4f09-b180-76f38ef45d33.lovable.app/
+
 ## ❗ Problem
 
 The existing reservation process relies on manual review and coordination across multiple departments. This leads to:
