@@ -3,7 +3,6 @@ import { CalendarCheck2 } from "lucide-react";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/reserve", label: "Reserve" },
   { to: "/rooms", label: "Rooms" },
   { to: "/dashboard", label: "My Requests" },
   { to: "/admin", label: "Admin" },
