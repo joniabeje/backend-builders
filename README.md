@@ -4,7 +4,7 @@
 
 ## 🚀 Overview
 
-Backend Builders is a web-based event reservation and decision support system designed for the College of Engineering and Architecture at Howard University.
+Our team, The Backend Builders, built a web-based event reservation and decision support system designed for the College of Engineering and Architecture at Howard University.
 
 The platform transforms a manual, form-based reservation process into an intelligent system that validates requests in real time, assists users during event planning, and helps administrators efficiently manage approvals and campus resources.
 
