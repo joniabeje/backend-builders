@@ -39,15 +39,17 @@ This project introduces an intelligent reservation system that:
 
 The system follows a layered architecture:
 
+```
 Users
-↓
+  ↓
 Frontend (React + TypeScript)
-↓
+  ↓
 Backend API
-↓
+  ↓
 Validation | Scheduling | Recommendation Modules
-↓
+  ↓
 Database
+```
 
 This design ensures scalability, modularity, and clean separation of concerns.
 
