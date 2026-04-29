@@ -84,6 +84,13 @@ cd backend-builders
 bun install
 ```
 
+## Install dependencies
+
+```bash
+npm install
+npm run dev
+```
+
 ## ▶️ Run Locally
 
 ```bash
