@@ -1,0 +1,423 @@
+<title>CEA Reserve System Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f6f7f5;
+    --ink: #1a2330;
+    --muted: #5d6977;
+    --line: #c5ccd3;
+    --panel: #eaeef1;
+    --card: #ffffff;
+    --accent: #0b3a5d;      /* Howard navy */
+    --accent-ink: #ffffff;
+    --tint: #dce8f2;        /* exists-today fill */
+    --tint-line: #6f95b6;
+    --p1: #f1e9d6;          /* P1 fill */
+    --p1-line: #b89a5a;
+    --red: #b8102b;         /* Howard red, used once */
+    --display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0f151c; --ink: #e5eaef; --muted: #98a4b1; --line: #3a4652;
+      --panel: #171f28; --card: #1c2530; --accent: #8fbfe8; --accent-ink: #0f151c;
+      --tint: #1e3346; --tint-line: #5f8fb8; --p1: #332c1c; --p1-line: #a68b4f; --red: #f0616f;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f151c; --ink: #e5eaef; --muted: #98a4b1; --line: #3a4652;
+    --panel: #171f28; --card: #1c2530; --accent: #8fbfe8; --accent-ink: #0f151c;
+    --tint: #1e3346; --tint-line: #5f8fb8; --p1: #332c1c; --p1-line: #a68b4f; --red: #f0616f;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; }
+  header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+  .lede { max-width: 66ch; color: var(--muted); margin: 6px 0 0; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 20px; margin: 40px 0 8px; letter-spacing: -.005em; }
+  p { max-width: 66ch; margin: 0 0 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13px; color: var(--muted); margin: 8px 0 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { width: 26px; height: 14px; border-radius: 3px; border: 1.5px solid var(--tint-line); background: var(--tint); }
+  .sw.dash { border: 1.5px dashed var(--line); background: transparent; }
+  .sw.p1 { border-color: var(--p1-line); background: var(--p1); }
+  figure { margin: 0; }
+  .fig { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  svg { display: block; max-width: 100%; height: auto; min-width: 640px; font-family: var(--body); color: var(--ink); }
+  svg text { font-size: 12px; fill: currentColor; }
+  svg .t { font-weight: 600; font-size: 12.5px; }
+  svg .s { font-size: 11px; fill: var(--muted); }
+  svg .m { font-family: var(--mono); font-size: 11px; }
+  svg .h { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .06em; fill: var(--muted); }
+  svg .box { fill: var(--card); stroke: currentColor; stroke-width: 1.2; }
+  svg .ex { fill: var(--tint); stroke: var(--tint-line); stroke-width: 1.2; }
+  svg .pl { fill: var(--card); stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  svg .p1 { fill: var(--p1); stroke: var(--p1-line); stroke-width: 1.2; }
+  svg .panel { fill: var(--panel); stroke: none; }
+  svg .chip { fill: var(--card); stroke: var(--tint-line); stroke-width: 1; }
+  svg .edge { fill: none; stroke: currentColor; stroke-width: 1.3; }
+  svg .edge.pl { stroke: var(--muted); stroke-dasharray: 5 4; }
+  svg .badge { fill: var(--accent); }
+  svg .badge-t { fill: var(--accent-ink); font-size: 10.5px; font-weight: 600; font-family: var(--mono); }
+  figcaption { font-size: 13px; color: var(--muted); margin: 10px 4px 0; max-width: 80ch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .tbl { overflow-x: auto; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h3 { font-family: var(--display); font-size: 14px; margin: 0 0 6px; }
+  .card ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  .card li { margin: 2px 0; }
+  .risk { border-left: 3px solid var(--red); }
+  footer { margin-top: 40px; font-size: 12.5px; color: var(--muted); max-width: 70ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Backend Builders · Howard CEA · September 2026</div>
+    <h1>CEA Reserve System Map</h1>
+    <p class="lede">A high-level view of the event space reservation system: what the repository implements today, what the fifteen open GitHub issues add, and the order they have to land in.</p>
+  </header>
+
+  <h2>1. Architecture: today versus target</h2>
+  <p>The left side is what runs now. Every route reads from two static TypeScript modules and holds edits in React state, so a refresh discards each submission and approval. The right side is the layered system the backlog describes, with the issue number that delivers each part.</p>
+  <div class="legend">
+    <span><i class="sw"></i> exists in the repo</span>
+    <span><i class="sw dash"></i> planned, with the GitHub issue that adds it</span>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 1000 565" role="img" aria-label="Today the browser app imports static room and mock request modules with no backend. The target adds auth, a reservation API, server-side domain rules, a database, a notification service, and a test harness.">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"></path>
+          </marker>
+          <marker id="arr-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"></path>
+          </marker>
+        </defs>
+
+        <rect class="panel" x="20" y="10" width="470" height="545" rx="10"></rect>
+        <rect class="panel" x="510" y="10" width="470" height="545" rx="10"></rect>
+        <text class="h" x="40" y="36">TODAY · LOVABLE PROTOTYPE</text>
+        <text class="h" x="530" y="36">TARGET · BACKLOG ARCHITECTURE</text>
+
+        <!-- LEFT: users -->
+        <rect class="ex" x="60" y="56" width="390" height="46" rx="6"></rect>
+        <text class="t" x="255" y="75" text-anchor="middle">Anyone with the URL</text>
+        <text class="s" x="255" y="92" text-anchor="middle">requester and admin alike, no login</text>
+        <line class="edge" x1="255" y1="102" x2="255" y2="126" marker-end="url(#arr)"></line>
+
+        <!-- LEFT: app -->
+        <rect class="ex" x="60" y="128" width="390" height="94" rx="6"></rect>
+        <text class="t" x="76" y="150">TanStack Start app · React 19 · Tailwind · shadcn/ui</text>
+        <text class="s" x="76" y="166">file routes in src/routes, served by Cloudflare Workers (wrangler)</text>
+        <rect class="chip" x="76" y="178" width="26" height="24" rx="4"></rect>
+        <text class="m" x="89" y="194" text-anchor="middle">/</text>
+        <rect class="chip" x="110" y="178" width="58" height="24" rx="4"></rect>
+        <text class="m" x="139" y="194" text-anchor="middle">/rooms</text>
+        <rect class="chip" x="176" y="178" width="66" height="24" rx="4"></rect>
+        <text class="m" x="209" y="194" text-anchor="middle">/reserve</text>
+        <rect class="chip" x="250" y="178" width="86" height="24" rx="4"></rect>
+        <text class="m" x="293" y="194" text-anchor="middle">/dashboard</text>
+        <rect class="chip" x="344" y="178" width="58" height="24" rx="4"></rect>
+        <text class="m" x="373" y="194" text-anchor="middle">/admin</text>
+
+        <line class="edge" x1="255" y1="222" x2="255" y2="256" marker-end="url(#arr)"></line>
+        <text class="s" x="266" y="243">imports · edits live in useState</text>
+
+        <!-- LEFT: lib -->
+        <rect class="ex" x="60" y="258" width="390" height="140" rx="6"></rect>
+        <text class="t" x="76" y="280">src/lib — static TypeScript modules</text>
+        <text class="m" x="76" y="304">rooms.ts · ROOMS[6] · recommendRooms(n)</text>
+        <text class="m" x="76" y="326">mock-requests.ts · MOCK_REQUESTS[5] · riskScore()</text>
+        <text class="m" x="76" y="348">routes/reserve.tsx · inline validation rules</text>
+        <text class="s" x="76" y="374">static status flags · request rooms don't join to ROOMS ids</text>
+
+        <!-- LEFT: absent -->
+        <rect class="pl" x="60" y="430" width="390" height="58" rx="6"></rect>
+        <text class="t" x="255" y="452" text-anchor="middle">No API · no database · no auth · no tests</text>
+        <text class="s" x="255" y="470" text-anchor="middle">a page refresh discards every submission and approval</text>
+
+        <!-- RIGHT: users + staff -->
+        <rect class="ex" x="550" y="56" width="230" height="46" rx="6"></rect>
+        <text class="t" x="665" y="75" text-anchor="middle">Requesters and admins</text>
+        <text class="s" x="665" y="92" text-anchor="middle">roles: student · advisor · admin · facilities</text>
+        <rect class="pl" x="800" y="56" width="160" height="46" rx="6"></rect>
+        <text class="t" x="880" y="75" text-anchor="middle">Service staff</text>
+        <text class="s" x="880" y="92" text-anchor="middle">IT · custodial · security</text>
+        <line class="edge" x1="665" y1="102" x2="665" y2="126" marker-end="url(#arr)"></line>
+        <line class="edge pl" x1="880" y1="128" x2="880" y2="104" marker-end="url(#arr-m)"></line>
+        <text class="s" x="888" y="119">notifies</text>
+
+        <!-- RIGHT: app -->
+        <rect class="ex" x="550" y="128" width="230" height="94" rx="6"></rect>
+        <text class="t" x="566" y="150">Web app, same five routes</text>
+        <rect class="pl" x="566" y="162" width="198" height="24" rx="4"></rect>
+        <text x="665" y="178" text-anchor="middle">login + role guards <tspan class="m">#14</tspan></text>
+        <rect class="pl" x="566" y="192" width="198" height="24" rx="4"></rect>
+        <text x="665" y="208" text-anchor="middle">react-query API client <tspan class="m">#2</tspan></text>
+
+        <!-- RIGHT: notifications -->
+        <rect class="pl" x="800" y="128" width="160" height="94" rx="6"></rect>
+        <text class="t" x="880" y="150" text-anchor="middle">Notification service <tspan class="m">#8</tspan></text>
+        <text class="s" x="880" y="170" text-anchor="middle">IT #8 · custodial #9</text>
+        <text class="s" x="880" y="186" text-anchor="middle">security #10</text>
+        <text class="s" x="880" y="208" text-anchor="middle">fires on approval / high risk</text>
+
+        <line class="edge pl" x1="665" y1="222" x2="665" y2="256" marker-end="url(#arr-m)"></line>
+        <text class="s" x="676" y="243">POST · GET · PATCH</text>
+
+        <!-- RIGHT: API -->
+        <rect class="pl" x="550" y="258" width="230" height="58" rx="6"></rect>
+        <text class="t" x="665" y="280" text-anchor="middle">Backend API <tspan class="m">#13</tspan></text>
+        <text class="m" x="665" y="300" text-anchor="middle">/reservations · /reservations/:id</text>
+        <path class="edge pl" d="M780 287 H880 V224" marker-end="url(#arr-m)"></path>
+
+        <line class="edge pl" x1="665" y1="316" x2="665" y2="346" marker-end="url(#arr-m)"></line>
+
+        <!-- RIGHT: domain -->
+        <rect class="pl" x="550" y="348" width="230" height="120" rx="6"></rect>
+        <text class="t" x="665" y="370" text-anchor="middle">Domain rules, enforced server-side</text>
+        <text class="m" x="665" y="392" text-anchor="middle">validateReservation  #1</text>
+        <text class="m" x="665" y="410" text-anchor="middle">detectConflicts  #3</text>
+        <text class="m" x="665" y="428" text-anchor="middle">computeRisk  #5</text>
+        <text class="m" x="665" y="446" text-anchor="middle">recommendRooms  #4</text>
+
+        <!-- RIGHT: tests -->
+        <rect class="pl" x="800" y="348" width="160" height="120" rx="6"></rect>
+        <text class="t" x="880" y="370" text-anchor="middle">Test harness <tspan class="m">#15</tspan></text>
+        <text class="s" x="880" y="392" text-anchor="middle">Vitest on src/lib</text>
+        <text class="s" x="880" y="410" text-anchor="middle">Playwright reserve → admin</text>
+        <text class="s" x="880" y="428" text-anchor="middle">CI gate on every PR</text>
+        <text class="s" x="880" y="446" text-anchor="middle">no dependencies, start now</text>
+
+        <line class="edge pl" x1="665" y1="468" x2="665" y2="498" marker-end="url(#arr-m)"></line>
+
+        <!-- RIGHT: DB -->
+        <rect class="pl" x="550" y="500" width="230" height="46" rx="6"></rect>
+        <text class="t" x="665" y="519" text-anchor="middle">Database <tspan class="m">#13</tspan></text>
+        <text class="s" x="665" y="536" text-anchor="middle">reservations · rooms · audit log</text>
+      </svg>
+    </div>
+    <figcaption>Figure 1. The prototype stops at the browser. The target moves every rule the client applies today behind an API so it cannot be bypassed, and adds the three service integrations the README already promises.</figcaption>
+  </figure>
+
+  <h2>2. Life of a reservation request</h2>
+  <p>This is the path a request takes through the app, with the rules the code applies at each step. The client-side checks and room suggestions work today. Persisting the submission and notifying staff are planned.</p>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 1000 268" role="img" aria-label="A requester fills the form, live checks run as they type, rooms are suggested from attendance, submit creates a pending request, an admin moves it to approved, rejected, or needs changes, and approval triggers notifications in the planned system.">
+        <rect class="ex" x="20" y="40" width="150" height="76" rx="6"></rect>
+        <text class="t" x="95" y="62" text-anchor="middle">Fill the form</text>
+        <text class="s" x="95" y="80" text-anchor="middle">on /reserve</text>
+        <text class="s" x="95" y="96" text-anchor="middle">9 fields + food, guests, IT</text>
+        <line class="edge" x1="170" y1="78" x2="198" y2="78" marker-end="url(#arr)"></line>
+        <text class="s" x="184" y="32" text-anchor="middle">as you type</text>
+
+        <rect class="ex" x="200" y="40" width="160" height="76" rx="6"></rect>
+        <text class="t" x="280" y="62" text-anchor="middle">Live checks (client)</text>
+        <text class="s" x="280" y="80" text-anchor="middle">required fields · advisor named</text>
+        <text class="s" x="280" y="96" text-anchor="middle">attendance ≤ capacity · after-hours</text>
+        <line class="edge" x1="360" y1="78" x2="388" y2="78" marker-end="url(#arr)"></line>
+        <text class="s" x="374" y="32" text-anchor="middle">attendance</text>
+
+        <rect class="ex" x="390" y="40" width="150" height="76" rx="6"></rect>
+        <text class="t" x="465" y="62" text-anchor="middle">Room suggestions</text>
+        <text class="s" x="465" y="80" text-anchor="middle">capacity ≥ n and ≤ 3n</text>
+        <text class="s" x="465" y="96" text-anchor="middle">smallest three, no calendar check</text>
+        <line class="edge" x1="540" y1="78" x2="568" y2="78" marker-end="url(#arr)"></line>
+        <text class="s" x="554" y="32" text-anchor="middle">no errors</text>
+
+        <rect class="ex" x="570" y="40" width="130" height="76" rx="6"></rect>
+        <text class="t" x="635" y="62" text-anchor="middle">Submit</text>
+        <text class="s" x="635" y="80" text-anchor="middle">today: setSubmitted(true)</text>
+        <text class="s" x="635" y="96" text-anchor="middle">target: POST /reservations</text>
+        <line class="edge" x1="700" y1="78" x2="738" y2="66" marker-end="url(#arr)"></line>
+
+        <!-- state machine -->
+        <rect class="ex" x="740" y="44" width="106" height="36" rx="18"></rect>
+        <text class="t" x="793" y="66" text-anchor="middle">pending</text>
+        <rect class="ex" x="874" y="44" width="106" height="36" rx="18"></rect>
+        <text class="t" x="927" y="66" text-anchor="middle">needs-changes</text>
+        <rect class="ex" x="740" y="150" width="106" height="36" rx="18"></rect>
+        <text class="t" x="793" y="172" text-anchor="middle">approved</text>
+        <rect class="ex" x="874" y="150" width="106" height="36" rx="18"></rect>
+        <text class="t" x="927" y="172" text-anchor="middle">rejected</text>
+
+        <line class="edge" x1="846" y1="56" x2="872" y2="56" marker-end="url(#arr)"></line>
+        <path class="edge pl" d="M874 72 H848" marker-end="url(#arr-m)"></path>
+        <text class="s" x="860" y="94" text-anchor="middle">resubmit</text>
+        <line class="edge" x1="793" y1="80" x2="793" y2="148" marker-end="url(#arr)"></line>
+        <line class="edge" x1="820" y1="80" x2="906" y2="148" marker-end="url(#arr)"></line>
+        <text class="s" x="728" y="124" text-anchor="end">admin decides on /admin,</text>
+        <text class="s" x="728" y="138" text-anchor="end">guided by riskScore</text>
+
+        <!-- risk rule + notification -->
+        <rect class="box" x="20" y="150" width="520" height="80" rx="6"></rect>
+        <text class="t" x="36" y="172">riskScore() as written in src/lib/mock-requests.ts</text>
+        <text class="m" x="36" y="194">attendance ≥150 → +2 · ≥75 → +1 · guests +1 · after-hours +1 · food +1</text>
+        <text class="m" x="36" y="214">score ≥4 high · ≥2 medium · else low</text>
+        <text class="s" x="20" y="252">display only today: nothing blocks or escalates a high-risk request (#5 moves this server-side)</text>
+
+        <rect class="pl" x="570" y="205" width="410" height="46" rx="6"></rect>
+        <text class="t" x="775" y="224" text-anchor="middle">Notification service <tspan class="m">#8</tspan> → IT · custodial <tspan class="m">#9</tspan> · security <tspan class="m">#10</tspan></text>
+        <text class="s" x="775" y="242" text-anchor="middle">triggered by approval, food, IT/AV request, guests, size, after-hours</text>
+        <line class="edge pl" x1="793" y1="186" x2="793" y2="203" marker-end="url(#arr-m)"></line>
+      </svg>
+    </div>
+    <figcaption>Figure 2. Solid boxes and arrows run in the browser today. The dashed resubmit edge, the persistence step, and the notification fan-out exist only as tickets.</figcaption>
+  </figure>
+
+  <h2>3. Ticket dependency graph</h2>
+  <p>Every issue carries a priority and a "depends on" note. Read left to right: a ticket can start once everything pointing into it is merged. The persistent API is the root of almost everything, which is why the board says to start there.</p>
+  <div class="legend">
+    <span><i class="sw"></i> P0 foundation / MVP</span>
+    <span><i class="sw p1"></i> P1 post-MVP</span>
+    <span><i class="sw dash"></i> P2 service integration and later</span>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 1120 360" role="img" aria-label="Dependency graph of the fifteen GitHub issues. Issue 13, the persistent API, issue 15, the test harness, and issue 1, validation, have no dependencies. Auth, availability, risk, and the form depend on the API. Dashboard and approvals depend on auth. Notifications, status tracking, and analytics depend on approvals. Custodial and security notifications depend on the shared notification service.">
+        <text class="h" x="120" y="22" text-anchor="middle">START NOW</text>
+        <text class="h" x="340" y="22" text-anchor="middle">AFTER THE API</text>
+        <text class="h" x="560" y="22" text-anchor="middle">AFTER AUTH</text>
+        <text class="h" x="780" y="22" text-anchor="middle">AFTER APPROVALS</text>
+        <text class="h" x="1000" y="22" text-anchor="middle">AFTER NOTIFICATIONS</text>
+
+        <!-- col 0 -->
+        <rect class="ex" x="30" y="40" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="38" y="48" width="30" height="16" rx="3"></rect><text class="badge-t" x="53" y="60" text-anchor="middle">#13</text>
+        <text class="t" x="76" y="60">Persistent API</text><text class="s" x="76" y="76">P0 · L · start here</text>
+
+        <rect class="ex" x="30" y="120" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="38" y="128" width="30" height="16" rx="3"></rect><text class="badge-t" x="53" y="140" text-anchor="middle">#15</text>
+        <text class="t" x="76" y="140">Test harness</text><text class="s" x="76" y="156">P0 · S · gates all PRs</text>
+
+        <rect class="ex" x="30" y="200" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="38" y="208" width="30" height="16" rx="3"></rect><text class="badge-t" x="53" y="220" text-anchor="middle">#1</text>
+        <text class="t" x="76" y="220">Validation rules</text><text class="s" x="76" y="236">P0 · M · extract from UI</text>
+
+        <!-- col 1 -->
+        <rect class="ex" x="250" y="40" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="258" y="48" width="30" height="16" rx="3"></rect><text class="badge-t" x="273" y="60" text-anchor="middle">#14</text>
+        <text class="t" x="296" y="60">Auth + role guards</text><text class="s" x="296" y="76">P0 · M · sessions on API</text>
+
+        <rect class="ex" x="250" y="120" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="258" y="128" width="30" height="16" rx="3"></rect><text class="badge-t" x="273" y="140" text-anchor="middle">#3</text>
+        <text class="t" x="296" y="140">Availability check</text><text class="s" x="296" y="156">P0 · M · overlap checks</text>
+
+        <rect class="p1" x="250" y="200" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="258" y="208" width="30" height="16" rx="3"></rect><text class="badge-t" x="273" y="220" text-anchor="middle">#5</text>
+        <text class="t" x="296" y="220">Risk detection</text><text class="s" x="296" y="236">P1 · M · risk on server</text>
+
+        <rect class="ex" x="250" y="280" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="258" y="288" width="30" height="16" rx="3"></rect><text class="badge-t" x="273" y="300" text-anchor="middle">#2</text>
+        <text class="t" x="296" y="300">Submission form</text><text class="s" x="296" y="316">P0 · M · call the API</text>
+
+        <!-- col 2 -->
+        <rect class="ex" x="470" y="40" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="478" y="48" width="30" height="16" rx="3"></rect><text class="badge-t" x="493" y="60" text-anchor="middle">#6</text>
+        <text class="t" x="516" y="60">Admin dashboard</text><text class="s" x="516" y="76">P0 · L · protected route</text>
+
+        <rect class="ex" x="470" y="120" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="478" y="128" width="30" height="16" rx="3"></rect><text class="badge-t" x="493" y="140" text-anchor="middle">#7</text>
+        <text class="t" x="516" y="140">Approve / reject</text><text class="s" x="516" y="156">P0 · M · PATCH, audited</text>
+
+        <rect class="p1" x="470" y="200" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="478" y="208" width="30" height="16" rx="3"></rect><text class="badge-t" x="493" y="220" text-anchor="middle">#4</text>
+        <text class="t" x="516" y="220">Room suggestions</text><text class="s" x="516" y="236">P1 · M · needs calendar</text>
+
+        <!-- col 3 -->
+        <rect class="p1" x="690" y="40" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="698" y="48" width="30" height="16" rx="3"></rect><text class="badge-t" x="713" y="60" text-anchor="middle">#11</text>
+        <text class="t" x="736" y="60">Status tracking</text><text class="s" x="736" y="76">P1 · S · per-user view</text>
+
+        <rect class="pl" x="690" y="120" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="698" y="128" width="30" height="16" rx="3"></rect><text class="badge-t" x="713" y="140" text-anchor="middle">#8</text>
+        <text class="t" x="736" y="140">Notifications</text><text class="s" x="736" y="156">P2 · M · IT alerts first</text>
+
+        <rect class="pl" x="690" y="200" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="698" y="208" width="30" height="16" rx="3"></rect><text class="badge-t" x="713" y="220" text-anchor="middle">#12</text>
+        <text class="t" x="736" y="220">History + analytics</text><text class="s" x="736" y="236">P2 · L · last in backlog</text>
+
+        <!-- col 4 -->
+        <rect class="pl" x="910" y="80" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="918" y="88" width="30" height="16" rx="3"></rect><text class="badge-t" x="933" y="100" text-anchor="middle">#9</text>
+        <text class="t" x="956" y="100">Custodial alerts</text><text class="s" x="956" y="116">P2 · S · food + size</text>
+
+        <rect class="pl" x="910" y="160" width="180" height="44" rx="6"></rect>
+        <rect class="badge" x="918" y="168" width="30" height="16" rx="3"></rect><text class="badge-t" x="933" y="180" text-anchor="middle">#10</text>
+        <text class="t" x="956" y="180">Security alerts</text><text class="s" x="956" y="196">P2 · S · guests, late</text>
+
+        <!-- edges: #13 -> #14 #3 #5 #2 -->
+        <line class="edge" x1="210" y1="62" x2="248" y2="62" marker-end="url(#arr)"></line>
+        <path class="edge" d="M210 62 C232 62 226 142 248 142" marker-end="url(#arr)"></path>
+        <path class="edge" d="M210 62 C232 62 226 222 248 222" marker-end="url(#arr)"></path>
+        <path class="edge" d="M210 62 C236 62 222 302 248 302" marker-end="url(#arr)"></path>
+        <!-- #1 -> #2 -->
+        <path class="edge" d="M210 222 C232 222 226 302 248 302" marker-end="url(#arr)"></path>
+        <!-- #14 -> #6 #7 -->
+        <line class="edge" x1="430" y1="62" x2="468" y2="62" marker-end="url(#arr)"></line>
+        <path class="edge" d="M430 62 C452 62 446 142 468 142" marker-end="url(#arr)"></path>
+        <!-- #3 -> #4 -->
+        <path class="edge" d="M430 142 C452 142 446 222 468 222" marker-end="url(#arr)"></path>
+        <!-- #7 -> #11 #8 #12 -->
+        <path class="edge" d="M650 142 C672 142 666 62 688 62" marker-end="url(#arr)"></path>
+        <line class="edge" x1="650" y1="142" x2="688" y2="142" marker-end="url(#arr)"></line>
+        <path class="edge" d="M650 142 C672 142 666 222 688 222" marker-end="url(#arr)"></path>
+        <!-- #8 -> #9 #10 -->
+        <path class="edge" d="M870 142 C892 142 886 102 908 102" marker-end="url(#arr)"></path>
+        <path class="edge" d="M870 142 C892 142 886 182 908 182" marker-end="url(#arr)"></path>
+        <!-- #5 -> #10, routed under the graph -->
+        <path class="edge pl" d="M430 222 H448 V340 H890 V182 H908" marker-end="url(#arr-m)"></path>
+        <text class="s" x="669" y="334" text-anchor="middle">#5 supplies the risk thresholds #10 alerts on</text>
+      </svg>
+    </div>
+    <figcaption>Figure 3. Edges are the direct dependencies from each issue's backlog notes. Edges that only repeat "depends on #13" through another ticket are omitted; every ticket right of the first column already needs the API.</figcaption>
+  </figure>
+
+  <h2>4. Routes and what feeds them</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Route</th><th>What it shows</th><th>Reads from today</th><th>Writes</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>Landing page with feature pitch and links</td><td>static copy</td><td>none</td></tr>
+      <tr><td><code>/rooms</code></td><td>Six room cards with capacity, features, availability flag</td><td><code>ROOMS</code></td><td>none</td></tr>
+      <tr><td><code>/reserve</code></td><td>Reservation form, live validation, up to three suggested rooms, confirmation panel</td><td><code>ROOMS</code>, <code>recommendRooms</code></td><td>local state only</td></tr>
+      <tr><td><code>/dashboard</code></td><td>Status counts and list of all mock requests</td><td><code>MOCK_REQUESTS</code></td><td>none</td></tr>
+      <tr><td><code>/admin</code></td><td>Filterable request table with risk level, approve and reject buttons</td><td><code>MOCK_REQUESTS</code>, <code>riskScore</code></td><td>local state only</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>5. What the audit flags</h2>
+  <div class="grid">
+    <div class="card risk">
+      <h3>Open admin surface</h3>
+      <ul><li>Anyone can approve or reject on <code>/admin</code>.</li><li>Fixed by #14, which needs #13 for server-side sessions.</li></ul>
+    </div>
+    <div class="card risk">
+      <h3>Rules live in the UI</h3>
+      <ul><li>Capacity and after-hours checks sit inline in the reserve page.</li><li>Risk score is display only and never enforced.</li></ul>
+    </div>
+    <div class="card risk">
+      <h3>Docs ahead of code</h3>
+      <ul><li>README promises an API, conflict detection, notifications, and AWS.</li><li>Package is still named <code>tanstack_start_ts</code>, with both Bun and npm lockfiles.</li></ul>
+    </div>
+    <div class="card risk">
+      <h3>Zero tests</h3>
+      <ul><li>No runner, no test script, no CI workflow.</li><li>#15 is small, has no dependencies, and unblocks the definition of done for every other ticket.</li></ul>
+    </div>
+  </div>
+
+  <footer>Sources: the repository at joniabeje/backend-builders on main (commit e47a61d), README.md, DEBT_AND_RISK.md, and GitHub issues #1 through #15 with their backlog notes finalized 2026-09-23. Ticket labels F1 to F16 are the original feature codes.</footer>
+</div>
