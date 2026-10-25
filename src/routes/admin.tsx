@@ -2,12 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import {
-  MOCK_REQUESTS,
-  riskScore,
-  type EventRequest,
-  type RequestStatus,
-} from "@/lib/mock-requests";
+import { MOCK_REQUESTS, type EventRequest, type RequestStatus } from "@/lib/mock-requests";
+import { riskScore } from "@/lib/risk-score";
 import { getRoomDisplayName } from "@/lib/rooms";
 import {
   CheckCircle2,

@@ -109,21 +109,3 @@ export const MOCK_REQUESTS: EventRequest[] = [
     submittedAt: "2026-04-18",
   },
 ];
-
-export function riskScore(r: EventRequest): {
-  level: "low" | "medium" | "high";
-  reasons: string[];
-} {
-  const reasons: string[] = [];
-  if (r.attendance >= 150) reasons.push("Large attendance");
-  if (r.externalGuests) reasons.push("External guests");
-  if (r.afterHours) reasons.push("After-hours");
-  if (r.hasFood) reasons.push("Food service");
-  const score =
-    (r.attendance >= 150 ? 2 : r.attendance >= 75 ? 1 : 0) +
-    (r.externalGuests ? 1 : 0) +
-    (r.afterHours ? 1 : 0) +
-    (r.hasFood ? 1 : 0);
-  const level = score >= 4 ? "high" : score >= 2 ? "medium" : "low";
-  return { level, reasons };
-}
