@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { MOCK_REQUESTS, type RequestStatus } from "@/lib/mock-requests";
+import { StatusBadge } from "@/components/StatusBadge";
+import {
+  REQUEST_STATUSES,
+  REQUEST_STATUS_LABELS,
+  type EventRequest,
+  type RequestStatus,
+} from "@/domain/reservation";
+import { useReservations } from "@/hooks/use-reservations";
 import { getRoomDisplayName } from "@/lib/rooms";
 import { Calendar, Clock, MapPin, Users2 } from "lucide-react";
 
@@ -18,28 +25,25 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
 });
 
-const statusStyles: Record<RequestStatus, string> = {
-  pending: "bg-warning/15 text-warning-foreground border-warning/40",
-  approved: "bg-success/15 text-success border-success/40",
-  rejected: "bg-destructive/15 text-destructive border-destructive/40",
-  "needs-changes": "bg-primary/10 text-primary border-primary/30",
-};
+/** Requester-facing wording; the admin view uses the shorter "Pending". */
+function requesterLabel(status: RequestStatus): string {
+  return status === "pending" ? "Pending Review" : REQUEST_STATUS_LABELS[status];
+}
 
-const statusLabel: Record<RequestStatus, string> = {
-  pending: "Pending Review",
-  approved: "Approved",
-  rejected: "Rejected",
-  "needs-changes": "Needs Changes",
-};
+function countByStatus(requests: readonly EventRequest[]): Record<RequestStatus, number> {
+  const counts: Record<RequestStatus, number> = {
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    "needs-changes": 0,
+  };
+  for (const request of requests) counts[request.status] += 1;
+  return counts;
+}
 
 function DashboardPage() {
-  const counts = MOCK_REQUESTS.reduce<Record<RequestStatus, number>>(
-    (acc, r) => {
-      acc[r.status] = (acc[r.status] || 0) + 1;
-      return acc;
-    },
-    { pending: 0, approved: 0, rejected: 0, "needs-changes": 0 },
-  );
+  const { data: requests = [], isPending, isError, error } = useReservations();
+  const counts = countByStatus(requests);
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,10 +59,10 @@ function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {(["pending", "approved", "needs-changes", "rejected"] as RequestStatus[]).map((s) => (
+          {REQUEST_STATUSES.map((s) => (
             <div key={s} className="rounded-xl border border-border bg-card p-5 shadow-card">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                {statusLabel[s]}
+                {requesterLabel(s)}
               </div>
               <div className="mt-2 text-3xl font-bold text-foreground">{counts[s]}</div>
             </div>
@@ -66,7 +70,13 @@ function DashboardPage() {
         </div>
 
         <div className="mt-10 grid gap-4">
-          {MOCK_REQUESTS.map((r) => (
+          {isPending && <p className="text-sm text-muted-foreground">Loading your requests…</p>}
+          {isError && (
+            <p role="alert" className="text-sm text-destructive">
+              Could not load your requests: {error.message}
+            </p>
+          )}
+          {requests.map((r) => (
             <article
               key={r.id}
               className="group rounded-xl border border-border bg-card p-6 shadow-card transition-smooth hover:shadow-elegant"
@@ -75,11 +85,7 @@ function DashboardPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-semibold text-foreground">{r.title}</h3>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[r.status]}`}
-                    >
-                      {statusLabel[r.status]}
-                    </span>
+                    <StatusBadge status={r.status} label={requesterLabel(r.status)} />
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {r.organization} · {r.id}
