@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { MOCK_REQUESTS, type EventRequest } from "./mock-requests.ts";
+import type { EventRequest } from "../domain/reservation.ts";
+import { MOCK_REQUESTS } from "./mock-requests.ts";
 import { riskScore, type RiskInput } from "./risk-score.ts";
 
 const quiet: RiskInput = {

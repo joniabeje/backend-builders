@@ -1,28 +1,7 @@
-export type RequestStatus = "pending" | "approved" | "rejected" | "needs-changes";
+import type { EventRequest } from "@/domain/reservation";
 
-/**
- * `room` stores a stable ROOMS id (e.g. "atrium"), not a free-text label.
- * Display names come from getRoomDisplayName / getRoomById in rooms.ts.
- */
-export type EventRequest = {
-  id: string;
-  title: string;
-  organization: string;
-  requester: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  attendance: number;
-  room: string;
-  status: RequestStatus;
-  hasFood: boolean;
-  externalGuests: boolean;
-  afterHours: boolean;
-  itNeeds: boolean;
-  submittedAt: string;
-};
-
-export const MOCK_REQUESTS: EventRequest[] = [
+/** Seed data for InMemoryReservationRepository. Routes must not import this directly. */
+export const MOCK_REQUESTS: readonly EventRequest[] = [
   {
     id: "REQ-1042",
     title: "NSBE General Body Meeting",
