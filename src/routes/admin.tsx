@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { MOCK_REQUESTS, type EventRequest, type RequestStatus } from "@/lib/mock-requests";
+import { StatusBadge } from "@/components/StatusBadge";
+import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/domain/reservation";
+import { useReservations, useUpdateReservationStatus } from "@/hooks/use-reservations";
 import { riskScore } from "@/lib/risk-score";
 import { getRoomDisplayName } from "@/lib/rooms";
 import {
@@ -28,19 +30,6 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-const statusStyles: Record<RequestStatus, string> = {
-  pending: "bg-warning/15 text-warning-foreground border-warning/40",
-  approved: "bg-success/15 text-success border-success/40",
-  rejected: "bg-destructive/15 text-destructive border-destructive/40",
-  "needs-changes": "bg-primary/10 text-primary border-primary/30",
-};
-const statusLabel: Record<RequestStatus, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-  "needs-changes": "Needs Changes",
-};
-
 const riskStyles = {
   low: "bg-success/10 text-success border-success/30",
   medium: "bg-warning/15 text-warning-foreground border-warning/40",
@@ -48,13 +37,18 @@ const riskStyles = {
 };
 
 function AdminPage() {
-  const [requests, setRequests] = useState<EventRequest[]>(MOCK_REQUESTS);
+  const { data: requests = [], isPending, isError, error } = useReservations();
+  const updateStatus = useUpdateReservationStatus();
   const [filter, setFilter] = useState<"all" | RequestStatus>("all");
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
 
   function setStatus(id: string, status: RequestStatus) {
-    setRequests((rs) => rs.map((r) => (r.id === id ? { ...r, status } : r)));
+    updateStatus.mutate({ id, status });
+  }
+
+  function isUpdating(id: string): boolean {
+    return updateStatus.isPending && updateStatus.variables?.id === id;
   }
 
   const stats = [
@@ -111,13 +105,13 @@ function AdminPage() {
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Filter className="h-3.5 w-3.5" /> Filter:
           </span>
-          {(["all", "pending", "approved", "needs-changes", "rejected"] as const).map((f) => (
+          {(["all", ...REQUEST_STATUSES] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-smooth ${filter === f ? "bg-gradient-primary text-primary-foreground shadow-elegant" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
             >
-              {f === "all" ? "All" : statusLabel[f]}
+              {f === "all" ? "All" : REQUEST_STATUS_LABELS[f]}
             </button>
           ))}
         </div>
@@ -169,25 +163,27 @@ function AdminPage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[r.status]}`}
-                      >
-                        {statusLabel[r.status]}
-                      </span>
+                      <StatusBadge status={r.status} />
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="inline-flex gap-1.5">
                         <button
+                          type="button"
                           onClick={() => setStatus(r.id, "approved")}
+                          disabled={isUpdating(r.id)}
                           title="Approve"
-                          className="inline-flex items-center justify-center rounded-md bg-success/10 p-2 text-success transition-smooth hover:bg-success/20"
+                          aria-label={`Approve ${r.title}`}
+                          className="inline-flex items-center justify-center rounded-md bg-success/10 p-2 text-success transition-smooth hover:bg-success/20 disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => setStatus(r.id, "rejected")}
+                          disabled={isUpdating(r.id)}
                           title="Reject"
-                          className="inline-flex items-center justify-center rounded-md bg-destructive/10 p-2 text-destructive transition-smooth hover:bg-destructive/20"
+                          aria-label={`Reject ${r.title}`}
+                          className="inline-flex items-center justify-center rounded-md bg-destructive/10 p-2 text-destructive transition-smooth hover:bg-destructive/20 disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                         </button>
@@ -196,7 +192,25 @@ function AdminPage() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && (
+              {isPending && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    Loading requests…
+                  </td>
+                </tr>
+              )}
+              {isError && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    role="alert"
+                    className="px-4 py-10 text-center text-sm text-destructive"
+                  >
+                    Could not load requests: {error.message}
+                  </td>
+                </tr>
+              )}
+              {!isPending && !isError && filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     No requests in this view.

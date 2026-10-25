@@ -1,11 +1,7 @@
 import type { EventRequest } from "@/domain/reservation";
 
-// Transitional re-export: the types now live in src/domain/reservation.ts.
-// Remove once no route imports them from this file.
-export type { EventRequest, RequestStatus } from "@/domain/reservation";
-
 /** Seed data for InMemoryReservationRepository. Routes must not import this directly. */
-export const MOCK_REQUESTS: EventRequest[] = [
+export const MOCK_REQUESTS: readonly EventRequest[] = [
   {
     id: "REQ-1042",
     title: "NSBE General Body Meeting",
