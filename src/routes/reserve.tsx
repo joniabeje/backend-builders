@@ -1,10 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FormField, FormSection, ToggleField, inputClassName } from "@/components/form-controls";
+import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
+import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
+import { ValidationPanel } from "@/components/reserve/ValidationPanel";
 import { useReservationForm } from "@/hooks/use-reservation-form";
 import { ROOMS } from "@/lib/rooms";
-import { CheckCircle2, AlertTriangle, Sparkles, Users2, CalendarCheck2 } from "lucide-react";
+import { CalendarCheck2 } from "lucide-react";
 
 export const Route = createFileRoute("/reserve")({
   head: () => ({
@@ -21,15 +24,8 @@ export const Route = createFileRoute("/reserve")({
 });
 
 function ReservePage() {
-  const {
-    form,
-    submitted,
-    validation,
-    recommendations: recs,
-    update,
-    submit,
-    reset,
-  } = useReservationForm();
+  const { form, submitted, validation, recommendations, update, submit, reset } =
+    useReservationForm();
   const { attendance, issues, requiredFieldsFilled, canSubmit } = validation;
 
   if (submitted) {
@@ -37,30 +33,7 @@ function ReservePage() {
       <div className="min-h-screen bg-background">
         <SiteNav />
         <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20">
-          <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-card">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle2 className="h-8 w-8 text-success" />
-            </div>
-            <h1 className="mt-6 text-3xl font-bold text-foreground">Request submitted!</h1>
-            <p className="mt-3 text-muted-foreground">
-              Your reservation for <strong>{form.title}</strong> has been queued for review. You'll
-              receive status updates as it moves through approval.
-            </p>
-            <div className="mt-8 flex justify-center gap-3">
-              <Link
-                to="/dashboard"
-                className="inline-flex rounded-md bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
-              >
-                View My Requests
-              </Link>
-              <button
-                onClick={reset}
-                className="inline-flex rounded-md border border-border bg-background px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
-              >
-                New Request
-              </button>
-            </div>
-          </div>
+          <ReservationSuccess eventTitle={form.title} onNewRequest={reset} />
         </main>
         <SiteFooter />
       </div>
@@ -169,29 +142,12 @@ function ReservePage() {
             </FormSection>
 
             <FormSection title="Room Selection">
-              {recs.length > 0 && (
-                <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Sparkles className="h-4 w-4 text-gold-foreground" /> Recommended for{" "}
-                    {attendance} attendees
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    {recs.map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => update("room", r.id)}
-                        className={`text-left rounded-md border p-3 text-sm transition-smooth ${form.room === r.id ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/40"}`}
-                      >
-                        <div className="font-semibold text-foreground">{r.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Cap. {r.capacity} · {r.building}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <RoomRecommendations
+                attendance={attendance}
+                rooms={recommendations}
+                selectedRoomId={form.room}
+                onSelect={(roomId) => update("room", roomId)}
+              />
               <FormField label="Choose Room *">
                 <select
                   className={inputClassName}
@@ -241,32 +197,7 @@ function ReservePage() {
           </form>
 
           <aside className="space-y-4 lg:sticky lg:top-24 self-start">
-            <div className="rounded-xl border border-border bg-card p-5 shadow-card">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Users2 className="h-4 w-4 text-primary" /> Live Validation
-              </div>
-              <ul className="mt-4 space-y-2 text-sm">
-                {issues.length === 0 && requiredFieldsFilled && (
-                  <li className="flex gap-2 text-success">
-                    <CheckCircle2 className="h-4 w-4 mt-0.5" /> All checks passed.
-                  </li>
-                )}
-                {issues.length === 0 && !requiredFieldsFilled && (
-                  <li className="text-muted-foreground">Fill in the form to see live checks.</li>
-                )}
-                {issues.map((i) => (
-                  <li
-                    key={i.code}
-                    className={`flex gap-2 ${i.severity === "error" ? "text-destructive" : "text-warning-foreground"}`}
-                  >
-                    <AlertTriangle
-                      className={`h-4 w-4 mt-0.5 ${i.severity === "error" ? "text-destructive" : "text-warning"}`}
-                    />
-                    <span className="text-foreground/90">{i.message}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ValidationPanel issues={issues} requiredFieldsFilled={requiredFieldsFilled} />
 
             <div className="rounded-xl bg-gradient-primary p-5 text-primary-foreground shadow-elegant">
               <div className="text-xs font-medium uppercase tracking-wider text-gold">Tip</div>
