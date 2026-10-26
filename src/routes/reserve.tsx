@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FormField, FormSection, ToggleField, inputClassName } from "@/components/form-controls";
-import { ROOMS, recommendRooms } from "@/lib/rooms";
-import { validateReservation, type ReservationForm } from "@/domain/reservation-validation";
+import { useReservationForm } from "@/hooks/use-reservation-form";
+import { ROOMS } from "@/lib/rooms";
 import { CheckCircle2, AlertTriangle, Sparkles, Users2, CalendarCheck2 } from "lucide-react";
 
 export const Route = createFileRoute("/reserve")({
@@ -21,31 +20,17 @@ export const Route = createFileRoute("/reserve")({
   component: ReservePage,
 });
 
-const initial: ReservationForm = {
-  title: "",
-  organization: "",
-  advisor: "",
-  date: "",
-  startTime: "",
-  endTime: "",
-  attendance: "",
-  purpose: "",
-  room: "",
-  hasFood: false,
-  externalGuests: false,
-  itNeeds: false,
-};
-
 function ReservePage() {
-  const [form, setForm] = useState<ReservationForm>(initial);
-  const [submitted, setSubmitted] = useState(false);
-
-  const { attendance, issues, requiredFieldsFilled, canSubmit } = validateReservation(form, ROOMS);
-  const recs = useMemo(() => recommendRooms(attendance), [attendance]);
-
-  function update<K extends keyof ReservationForm>(k: K, v: ReservationForm[K]) {
-    setForm((f) => ({ ...f, [k]: v }));
-  }
+  const {
+    form,
+    submitted,
+    validation,
+    recommendations: recs,
+    update,
+    submit,
+    reset,
+  } = useReservationForm();
+  const { attendance, issues, requiredFieldsFilled, canSubmit } = validation;
 
   if (submitted) {
     return (
@@ -69,10 +54,7 @@ function ReservePage() {
                 View My Requests
               </Link>
               <button
-                onClick={() => {
-                  setForm(initial);
-                  setSubmitted(false);
-                }}
+                onClick={reset}
                 className="inline-flex rounded-md border border-border bg-background px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
               >
                 New Request
@@ -105,7 +87,7 @@ function ReservePage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (canSubmit) setSubmitted(true);
+              submit();
             }}
             className="space-y-8 rounded-2xl border border-border bg-card p-6 md:p-8 shadow-card"
           >
