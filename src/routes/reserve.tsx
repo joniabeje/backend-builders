@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { FormField, FormSection, ToggleField, inputClassName } from "@/components/form-controls";
 import { ROOMS, recommendRooms } from "@/lib/rooms";
 import { validateReservation, type ReservationForm } from "@/domain/reservation-validation";
 import { CheckCircle2, AlertTriangle, Sparkles, Users2, CalendarCheck2 } from "lucide-react";
@@ -108,84 +109,84 @@ function ReservePage() {
             }}
             className="space-y-8 rounded-2xl border border-border bg-card p-6 md:p-8 shadow-card"
           >
-            <Section title="Event Information">
+            <FormSection title="Event Information">
               <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Event Title *">
+                <FormField label="Event Title *">
                   <input
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.title}
                     onChange={(e) => update("title", e.target.value)}
                     placeholder="NSBE General Body Meeting"
                   />
-                </Field>
-                <Field label="Organization *">
+                </FormField>
+                <FormField label="Organization *">
                   <input
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.organization}
                     onChange={(e) => update("organization", e.target.value)}
                     placeholder="NSBE — Howard Chapter"
                   />
-                </Field>
-                <Field label="Faculty Advisor *">
+                </FormField>
+                <FormField label="Faculty Advisor *">
                   <input
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.advisor}
                     onChange={(e) => update("advisor", e.target.value)}
                     placeholder="Dr. Last Name"
                   />
-                </Field>
-                <Field label="Expected Attendance *">
+                </FormField>
+                <FormField label="Expected Attendance *">
                   <input
                     type="number"
                     min={1}
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.attendance}
                     onChange={(e) => update("attendance", e.target.value)}
                     placeholder="50"
                   />
-                </Field>
-                <Field label="Event Purpose *" full>
+                </FormField>
+                <FormField label="Event Purpose *" full>
                   <textarea
                     rows={3}
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.purpose}
                     onChange={(e) => update("purpose", e.target.value)}
                     placeholder="Brief description of the event..."
                   />
-                </Field>
+                </FormField>
               </div>
-            </Section>
+            </FormSection>
 
-            <Section title="Date & Time">
+            <FormSection title="Date & Time">
               <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Date *">
+                <FormField label="Date *">
                   <input
                     type="date"
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.date}
                     onChange={(e) => update("date", e.target.value)}
                   />
-                </Field>
-                <Field label="Start *">
+                </FormField>
+                <FormField label="Start *">
                   <input
                     type="time"
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.startTime}
                     onChange={(e) => update("startTime", e.target.value)}
                   />
-                </Field>
-                <Field label="End *">
+                </FormField>
+                <FormField label="End *">
                   <input
                     type="time"
-                    className={inputCls}
+                    className={inputClassName}
                     value={form.endTime}
                     onChange={(e) => update("endTime", e.target.value)}
                   />
-                </Field>
+                </FormField>
               </div>
-            </Section>
+            </FormSection>
 
-            <Section title="Room Selection">
+            <FormSection title="Room Selection">
               {recs.length > 0 && (
                 <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 p-4">
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -209,9 +210,9 @@ function ReservePage() {
                   </div>
                 </div>
               )}
-              <Field label="Choose Room *">
+              <FormField label="Choose Room *">
                 <select
-                  className={inputCls}
+                  className={inputClassName}
                   value={form.room}
                   onChange={(e) => update("room", e.target.value)}
                 >
@@ -222,28 +223,28 @@ function ReservePage() {
                     </option>
                   ))}
                 </select>
-              </Field>
-            </Section>
+              </FormField>
+            </FormSection>
 
-            <Section title="Additional Services">
+            <FormSection title="Additional Services">
               <div className="grid gap-3 sm:grid-cols-3">
-                <Toggle
+                <ToggleField
                   label="Food / catering"
                   checked={form.hasFood}
                   onChange={(v) => update("hasFood", v)}
                 />
-                <Toggle
+                <ToggleField
                   label="External guests"
                   checked={form.externalGuests}
                   onChange={(v) => update("externalGuests", v)}
                 />
-                <Toggle
+                <ToggleField
                   label="IT / AV equipment"
                   checked={form.itNeeds}
                   onChange={(v) => update("itNeeds", v)}
                 />
               </div>
-            </Section>
+            </FormSection>
 
             <div className="flex items-center justify-between gap-4 border-t border-border pt-6">
               <p className="text-xs text-muted-foreground">Fields marked * are required.</p>
@@ -297,63 +298,5 @@ function ReservePage() {
       </main>
       <SiteFooter />
     </div>
-  );
-}
-
-const inputCls =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-smooth placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30";
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
-        {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  full,
-}: {
-  label: string;
-  children: React.ReactNode;
-  full?: boolean;
-}) {
-  return (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <div className="mt-1.5">{children}</div>
-    </label>
-  );
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex items-center justify-between rounded-md border p-3 text-sm font-medium transition-smooth ${checked ? "border-primary bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40"}`}
-    >
-      {label}
-      <span
-        className={`ml-3 inline-flex h-5 w-9 items-center rounded-full transition-smooth ${checked ? "bg-gradient-primary" : "bg-muted"}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-smooth ${checked ? "translate-x-4" : "translate-x-0.5"}`}
-        />
-      </span>
-    </button>
   );
 }
