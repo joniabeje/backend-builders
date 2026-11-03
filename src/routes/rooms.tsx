@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { useEffect, useState } from "react";
+import type { EventRequest } from "@/domain/reservation";
+import { findReservationInProgress } from "@/domain/room-availability";
+import { useReservations } from "@/hooks/use-reservations";
 import { ROOMS } from "@/lib/rooms";
 import { MapPin, Layers, Users2, ArrowRight } from "lucide-react";
 
@@ -8,15 +12,75 @@ export const Route = createFileRoute("/rooms")({
   head: () => ({
     meta: [
       { title: "Rooms — CEA Reserve" },
-      { name: "description", content: "Browse event spaces across the College of Engineering & Architecture, with capacities, amenities, and availability." },
+      {
+        name: "description",
+        content:
+          "Browse event spaces across the College of Engineering & Architecture, with capacities, amenities, and availability.",
+      },
       { property: "og:title", content: "Rooms — CEA Reserve" },
-      { property: "og:description", content: "Browse event spaces across CEA with amenities and availability." },
+      {
+        property: "og:description",
+        content: "Browse event spaces across CEA with amenities and availability.",
+      },
     ],
   }),
   component: RoomsPage,
 });
 
+type LocalNow = { date: string; minutes: number };
+
+function readLocalNow(): LocalNow {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return {
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    minutes: now.getHours() * 60 + now.getMinutes(),
+  };
+}
+
+/**
+ * The viewer's local date and time, refreshed every minute. Null during server render
+ * and the first client render, so the server's clock never causes a hydration mismatch.
+ */
+function useLocalNow(): LocalNow | null {
+  const [now, setNow] = useState<LocalNow | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(readLocalNow());
+    tick();
+    const timer = setInterval(tick, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+
+const BADGE_CLASS =
+  "absolute top-3 right-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow ";
+
+function AvailabilityBadge({
+  roomId,
+  now,
+  reservations,
+}: {
+  roomId: string;
+  now: LocalNow | null;
+  reservations: readonly EventRequest[] | undefined;
+}) {
+  if (!now || !reservations) {
+    return <span className={BADGE_CLASS + "bg-muted text-muted-foreground"}>Checking…</span>;
+  }
+  const current = findReservationInProgress(roomId, now.date, now.minutes, reservations);
+  return current ? (
+    <span className={BADGE_CLASS + "bg-destructive text-destructive-foreground"}>
+      Booked until {current.endTime}
+    </span>
+  ) : (
+    <span className={BADGE_CLASS + "bg-success text-success-foreground"}>Available now</span>
+  );
+}
+
 function RoomsPage() {
+  const now = useLocalNow();
+  const { data: reservations } = useReservations();
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <SiteNav />
@@ -31,7 +95,8 @@ function RoomsPage() {
                 Find the right room for your event
               </h1>
               <p className="mt-3 text-base md:text-lg text-muted-foreground">
-                Explore classrooms, studios, labs, and event spaces across the College of Engineering & Architecture.
+                Explore classrooms, studios, labs, and event spaces across the College of
+                Engineering & Architecture.
               </p>
             </div>
           </div>
@@ -53,19 +118,12 @@ function RoomsPage() {
                     loading="lazy"
                     className="h-full w-full object-cover transition-smooth group-hover:scale-[1.03]"
                   />
-                  <span
-                    className={
-                      "absolute top-3 right-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow " +
-                      (room.status === "available"
-                        ? "bg-success text-success-foreground"
-                        : "bg-destructive text-destructive-foreground")
-                    }
-                  >
-                    {room.status === "available" ? "Available" : "Reserved"}
-                  </span>
+                  <AvailabilityBadge roomId={room.id} now={now} reservations={reservations} />
                 </div>
                 <div className="flex flex-1 flex-col p-5">
-                  <h2 className="font-display text-lg font-semibold text-foreground">{room.name}</h2>
+                  <h2 className="font-display text-lg font-semibold text-foreground">
+                    {room.name}
+                  </h2>
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5" />

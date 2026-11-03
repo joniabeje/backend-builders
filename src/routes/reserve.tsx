@@ -5,7 +5,7 @@ import { FormField, FormSection, ToggleField, inputClassName } from "@/component
 import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
 import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
 import { ValidationPanel } from "@/components/reserve/ValidationPanel";
-import { useReservationForm } from "@/hooks/use-reservation-form";
+import { useReservationForm, type AvailabilityStatus } from "@/hooks/use-reservation-form";
 import { ROOMS } from "@/lib/rooms";
 import { CalendarCheck2 } from "lucide-react";
 
@@ -23,10 +23,54 @@ export const Route = createFileRoute("/reserve")({
   component: ReservePage,
 });
 
+const AVAILABILITY_HINTS: Record<AvailabilityStatus, string> = {
+  unchecked: "Pick a date, start, and end time to see which rooms are free.",
+  loading: "Checking room availability…",
+  error: "Room availability could not be loaded. Reload the page before submitting.",
+  checked: "",
+};
+
+function AvailabilityHint({
+  status,
+  available,
+  total,
+}: {
+  status: AvailabilityStatus;
+  available: number;
+  total: number;
+}) {
+  const message =
+    status === "checked"
+      ? `${available} of ${total} rooms are free for the selected date and time.`
+      : AVAILABILITY_HINTS[status];
+  return (
+    <p
+      role="status"
+      className={`mt-1.5 text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+    >
+      {message}
+    </p>
+  );
+}
+
 function ReservePage() {
-  const { form, submitted, validation, recommendations, update, submit, reset } =
-    useReservationForm();
+  const {
+    form,
+    submitted,
+    validation,
+    availabilityStatus,
+    availableRooms,
+    recommendations,
+    update,
+    submit,
+    reset,
+  } = useReservationForm();
   const { attendance, issues, requiredFieldsFilled, canSubmit } = validation;
+  // Keep a selected room that just became unavailable visible, so the select does not
+  // silently show "Select a room…" while the conflict error explains what happened.
+  const selectedRoomUnavailable =
+    form.room !== "" && !availableRooms.some((room) => room.id === form.room);
+  const selectedRoom = ROOMS.find((room) => room.id === form.room);
 
   if (submitted) {
     return (
@@ -155,12 +199,22 @@ function ReservePage() {
                   onChange={(e) => update("room", e.target.value)}
                 >
                   <option value="">Select a room…</option>
-                  {ROOMS.map((r) => (
+                  {availableRooms.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name} (capacity {r.capacity})
                     </option>
                   ))}
+                  {selectedRoomUnavailable && selectedRoom && (
+                    <option value={selectedRoom.id} disabled>
+                      {selectedRoom.name} (booked at this time)
+                    </option>
+                  )}
                 </select>
+                <AvailabilityHint
+                  status={availabilityStatus}
+                  available={availableRooms.length}
+                  total={ROOMS.length}
+                />
               </FormField>
             </FormSection>
 

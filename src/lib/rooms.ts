@@ -21,7 +21,6 @@ export type Room = {
   features: string[];
   floor: string;
   image: string;
-  status: "available" | "reserved";
 };
 
 export const ROOMS: Room[] = [
@@ -33,7 +32,6 @@ export const ROOMS: Room[] = [
     capacity: 250,
     features: ["Projector", "Sound System", "Stage", "Wheelchair Access"],
     image: auditoriumImg,
-    status: "available",
   },
   {
     id: "lkd-confa",
@@ -43,7 +41,6 @@ export const ROOMS: Room[] = [
     capacity: 40,
     features: ["Projector", "Whiteboard", "Video Conferencing"],
     image: conferenceImg,
-    status: "available",
   },
   {
     id: "innovation",
@@ -53,7 +50,6 @@ export const ROOMS: Room[] = [
     capacity: 30,
     features: ["3D Printers", "Workbenches", "Projector", "Whiteboard"],
     image: innovationImg,
-    status: "reserved",
   },
   {
     id: "arch-mp-b",
@@ -63,7 +59,6 @@ export const ROOMS: Room[] = [
     capacity: 80,
     features: ["Projector", "Movable Seating", "Sound System"],
     image: studioImg,
-    status: "available",
   },
   {
     id: "seminar-201",
@@ -73,7 +68,6 @@ export const ROOMS: Room[] = [
     capacity: 25,
     features: ["Smart Board", "Video Conferencing", "Whiteboard"],
     image: seminarImg,
-    status: "available",
   },
   {
     id: "atrium",
@@ -83,7 +77,6 @@ export const ROOMS: Room[] = [
     capacity: 150,
     features: ["Open Floor", "Natural Lighting", "Reception"],
     image: atriumImg,
-    status: "available",
   },
 ];
 

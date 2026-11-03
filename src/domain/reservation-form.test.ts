@@ -89,4 +89,19 @@ describe("reservationFormReducer", () => {
     const next = reduce(stateWith(VALID_FORM, true), { type: "reset" });
     assert.deepEqual(next, INITIAL_RESERVATION_FORM_STATE);
   });
+
+  it("ignores submit when the room is already booked for that time", () => {
+    const booked = [
+      {
+        id: "REQ-1",
+        room: "seminar-201",
+        date: VALID_FORM.date,
+        startTime: VALID_FORM.startTime,
+        endTime: VALID_FORM.endTime,
+        status: "pending" as const,
+      },
+    ];
+    const state = stateWith(VALID_FORM);
+    assert.equal(reduce(state, { type: "submit", reservations: booked }), state);
+  });
 });
