@@ -21,7 +21,6 @@ export type Room = {
   features: string[];
   floor: string;
   image: string;
-  status: "available" | "reserved";
 };
 
 export const ROOMS: Room[] = [
@@ -33,7 +32,6 @@ export const ROOMS: Room[] = [
     capacity: 250,
     features: ["Projector", "Sound System", "Stage", "Wheelchair Access"],
     image: auditoriumImg,
-    status: "available",
   },
   {
     id: "lkd-confa",
@@ -43,7 +41,6 @@ export const ROOMS: Room[] = [
     capacity: 40,
     features: ["Projector", "Whiteboard", "Video Conferencing"],
     image: conferenceImg,
-    status: "available",
   },
   {
     id: "innovation",
@@ -53,7 +50,6 @@ export const ROOMS: Room[] = [
     capacity: 30,
     features: ["3D Printers", "Workbenches", "Projector", "Whiteboard"],
     image: innovationImg,
-    status: "reserved",
   },
   {
     id: "arch-mp-b",
@@ -63,7 +59,6 @@ export const ROOMS: Room[] = [
     capacity: 80,
     features: ["Projector", "Movable Seating", "Sound System"],
     image: studioImg,
-    status: "available",
   },
   {
     id: "seminar-201",
@@ -73,7 +68,6 @@ export const ROOMS: Room[] = [
     capacity: 25,
     features: ["Smart Board", "Video Conferencing", "Whiteboard"],
     image: seminarImg,
-    status: "available",
   },
   {
     id: "atrium",
@@ -83,7 +77,6 @@ export const ROOMS: Room[] = [
     capacity: 150,
     features: ["Open Floor", "Natural Lighting", "Reception"],
     image: atriumImg,
-    status: "available",
   },
 ];
 
@@ -114,25 +107,7 @@ export function getRoomDisplayName(id: string): string {
   }
 }
 
-const MAX_REASONABLE_ATTENDANCE = 5000;
-
-/**
- * Recommend up to 3 rooms that fit attendance without being massively oversized.
- * Rejects NaN, non-finite, and absurd values instead of returning junk matches.
- */
-export function recommendRooms(attendance: number): Room[] {
-  if (
-    typeof attendance !== "number" ||
-    !Number.isFinite(attendance) ||
-    attendance < 1 ||
-    attendance > MAX_REASONABLE_ATTENDANCE
-  ) {
-    return [];
-  }
-
-  const needed = Math.floor(attendance);
-
-  return ROOMS.filter((r) => r.capacity >= needed && r.capacity <= needed * 3)
-    .sort((a, b) => a.capacity - b.capacity)
-    .slice(0, 3);
-}
+/** Every feature listed by at least one room, for the "required features" picker. */
+export const ROOM_FEATURES: readonly string[] = [
+  ...new Set(ROOMS.flatMap((room) => room.features)),
+].sort((a, b) => a.localeCompare(b));

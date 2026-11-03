@@ -4,6 +4,10 @@
 // Callers pass the room catalog in, so the same rules can later run on the server
 // against rooms loaded from the API instead of `src/lib/rooms.ts`.
 import type { Room } from "@/lib/rooms";
+import { describeConflicts, findConflicts, type BookedSlot } from "./room-availability";
+import { parseTimeOfDay } from "./time-of-day";
+
+export { parseTimeOfDay };
 
 /** Raw values from the reservation form. Inputs are strings, toggles are booleans. */
 export type ReservationForm = {
@@ -23,10 +27,15 @@ export type ReservationForm = {
   hasFood: boolean;
   externalGuests: boolean;
   itNeeds: boolean;
+  /** Room features the event needs, e.g. "Projector" (#4). */
+  requiredFeatures: readonly string[];
 };
 
 /** The only room fields the rules need, so callers are not tied to the UI catalog shape. */
-export type RoomCapacity = Pick<Room, "id" | "name" | "capacity">;
+export type RoomCapacity = Pick<Room, "id" | "name" | "capacity"> & {
+  /** Optional so callers that only check capacity can omit it; then no feature warning is raised. */
+  features?: readonly string[];
+};
 
 export type IssueSeverity = "error" | "warn";
 
@@ -35,6 +44,8 @@ export type IssueCode =
   | "attendance-min"
   | "room-unknown"
   | "room-capacity"
+  | "room-conflict"
+  | "room-missing-features"
   | "time-invalid"
   | "time-order"
   | "after-hours"
@@ -84,15 +95,7 @@ const REQUIRED_FIELDS = [
   "room",
 ] as const satisfies readonly (keyof ReservationForm)[];
 
-const TIME_OF_DAY = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/;
 const WHOLE_NUMBER = /^-?\d+$/;
-
-/** Minutes since midnight for "HH:mm" or "HH:mm:ss", or null if the value is not a valid time. */
-export function parseTimeOfDay(value: string): number | null {
-  const match = TIME_OF_DAY.exec(value.trim());
-  if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
 
 /** The attendance as a whole number, or null if the value is not one. */
 export function parseAttendance(value: string): number | null {
@@ -181,21 +184,63 @@ function timeIssues(start: number | null, end: number | null): ValidationIssue[]
   return [];
 }
 
+function featureIssues(
+  roomId: string,
+  required: readonly string[],
+  rooms: readonly RoomCapacity[],
+): ValidationIssue[] {
+  const room = rooms.find((candidate) => candidate.id === roomId);
+  if (!room?.features || required.length === 0) return [];
+  const missing = required.filter((feature) => !room.features?.includes(feature));
+  if (missing.length === 0) return [];
+  return [
+    {
+      code: "room-missing-features",
+      severity: "warn",
+      message: `${room.name} does not list ${missing.join(", ")}. Choose a recommended room or arrange it separately.`,
+    },
+  ];
+}
+
+function conflictIssues(
+  form: ReservationForm,
+  rooms: readonly RoomCapacity[],
+  reservations: readonly BookedSlot[],
+): ValidationIssue[] {
+  const conflicts = findConflicts(
+    { roomId: form.room, date: form.date, startTime: form.startTime, endTime: form.endTime },
+    reservations,
+  );
+  if (conflicts.length === 0) return [];
+  const roomName = rooms.find((room) => room.id === form.room)?.name ?? form.room;
+  return [
+    {
+      code: "room-conflict",
+      severity: "error",
+      message: `${roomName} is already booked on ${form.date} at ${describeConflicts(conflicts)}. Choose another room or time.`,
+    },
+  ];
+}
+
 /**
  * Checks a reservation form against CEA booking rules.
  *
  * Errors block submission; warnings tell the requester which offices will be involved.
  * Rules only run for fields the user has filled in, so an empty form has no issues.
+ * `reservations` are the existing bookings used for the double-booking check (#3).
  */
 export function validateReservation(
   form: ReservationForm,
   rooms: readonly RoomCapacity[],
+  reservations: readonly BookedSlot[] = [],
 ): ReservationValidation {
   const parsedAttendance = parseAttendance(form.attendance);
   const attendance = parsedAttendance ?? 0;
   const issues: ValidationIssue[] = [
     ...attendanceIssues(form.attendance, parsedAttendance),
     ...roomIssues(form.room, attendance, rooms),
+    ...conflictIssues(form, rooms, reservations),
+    ...featureIssues(form.room, form.requiredFeatures, rooms),
   ];
 
   let afterHours = false;

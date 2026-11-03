@@ -9,6 +9,7 @@ import {
   type ReservationForm,
   type RoomCapacity,
 } from "./reservation-validation.ts";
+import type { BookedSlot } from "./room-availability.ts";
 
 const ROOMS: RoomCapacity[] = [
   { id: "seminar-201", name: "Seminar Room 201", capacity: 25 },
@@ -28,6 +29,7 @@ const VALID_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 const EMPTY_FORM: ReservationForm = {
@@ -43,6 +45,7 @@ const EMPTY_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 function codesFor(overrides: Partial<ReservationForm>): IssueCode[] {
@@ -183,5 +186,73 @@ describe("validateReservation", () => {
 
   it("does not raise the security warning below 50 attendees", () => {
     assert.deepEqual(codesFor({ externalGuests: true, attendance: "49", room: "lkd-aud" }), []);
+  });
+});
+
+describe("validateReservation double-booking check", () => {
+  const BOOKED: BookedSlot[] = [
+    {
+      id: "REQ-1040",
+      room: "seminar-201",
+      date: "2026-11-04",
+      startTime: "12:30",
+      endTime: "14:00",
+      status: "approved",
+    },
+  ];
+  const validate = (overrides: Partial<ReservationForm>) =>
+    validateReservation({ ...VALID_FORM, ...overrides }, ROOMS, BOOKED);
+
+  it("blocks a room that is already booked for an overlapping time", () => {
+    const result = validate({});
+    const conflict = result.issues.find((issue) => issue.code === "room-conflict");
+    assert.equal(conflict?.severity, "error");
+    assert.equal(
+      conflict?.message,
+      "Seminar Room 201 is already booked on 2026-11-04 at 12:30–14:00 (REQ-1040). Choose another room or time.",
+    );
+    assert.equal(result.canSubmit, false);
+  });
+
+  it("allows the same room right after the existing booking ends", () => {
+    const result = validate({ startTime: "14:00", endTime: "15:00" });
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.canSubmit, true);
+  });
+
+  it("allows another room or another date for the same time", () => {
+    assert.equal(validate({ room: "lkd-aud" }).canSubmit, true);
+    assert.equal(validate({ date: "2026-11-05" }).canSubmit, true);
+  });
+
+  it("skips the check when no reservations are passed, as before #3", () => {
+    assert.equal(validateReservation(VALID_FORM, ROOMS).canSubmit, true);
+  });
+});
+
+describe("validateReservation required features", () => {
+  const WITH_FEATURES: RoomCapacity[] = [
+    { id: "seminar-201", name: "Seminar Room 201", capacity: 25, features: ["Whiteboard"] },
+  ];
+
+  it("warns, without blocking, when the selected room lacks a required feature", () => {
+    const result = validateReservation(
+      { ...VALID_FORM, requiredFeatures: ["Projector", "Whiteboard"] },
+      WITH_FEATURES,
+    );
+    assert.deepEqual(result.issues, [
+      {
+        code: "room-missing-features",
+        severity: "warn",
+        message:
+          "Seminar Room 201 does not list Projector. Choose a recommended room or arrange it separately.",
+      },
+    ]);
+    assert.equal(result.canSubmit, true);
+  });
+
+  it("raises nothing when the room has every required feature", () => {
+    const form = { ...VALID_FORM, requiredFeatures: ["Whiteboard"] };
+    assert.deepEqual(validateReservation(form, WITH_FEATURES).issues, []);
   });
 });

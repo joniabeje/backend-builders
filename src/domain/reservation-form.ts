@@ -2,6 +2,7 @@
 //
 // Framework-free like reservation-validation.ts: the React hook in
 // src/hooks/use-reservation-form.ts is a thin wrapper around this reducer.
+import type { BookedSlot } from "./room-availability";
 import {
   validateReservation,
   type ReservationForm,
@@ -21,6 +22,7 @@ export const EMPTY_RESERVATION_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 export type ReservationFormState = {
@@ -37,12 +39,13 @@ export type ReservationFormAction =
   | {
       [K in keyof ReservationForm]: { type: "update"; field: K; value: ReservationForm[K] };
     }[keyof ReservationForm]
-  | { type: "submit" }
+  | { type: "submit"; reservations?: readonly BookedSlot[] }
   | { type: "reset" };
 
 /**
  * Builds the reducer for a given room catalog. `submit` is ignored unless the form
  * passes validation, so the guard holds even if a caller skips the disabled button.
+ * `submit` carries the existing reservations so double bookings are blocked here too.
  */
 export function createReservationFormReducer(rooms: readonly RoomCapacity[]) {
   return function reservationFormReducer(
@@ -53,7 +56,7 @@ export function createReservationFormReducer(rooms: readonly RoomCapacity[]) {
       case "update":
         return { ...state, form: { ...state.form, [action.field]: action.value } };
       case "submit":
-        return validateReservation(state.form, rooms).canSubmit
+        return validateReservation(state.form, rooms, action.reservations).canSubmit
           ? { ...state, submitted: true }
           : state;
       case "reset":
