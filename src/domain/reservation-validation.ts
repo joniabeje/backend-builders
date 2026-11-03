@@ -27,10 +27,15 @@ export type ReservationForm = {
   hasFood: boolean;
   externalGuests: boolean;
   itNeeds: boolean;
+  /** Room features the event needs, e.g. "Projector" (#4). */
+  requiredFeatures: readonly string[];
 };
 
 /** The only room fields the rules need, so callers are not tied to the UI catalog shape. */
-export type RoomCapacity = Pick<Room, "id" | "name" | "capacity">;
+export type RoomCapacity = Pick<Room, "id" | "name" | "capacity"> & {
+  /** Optional so callers that only check capacity can omit it; then no feature warning is raised. */
+  features?: readonly string[];
+};
 
 export type IssueSeverity = "error" | "warn";
 
@@ -40,6 +45,7 @@ export type IssueCode =
   | "room-unknown"
   | "room-capacity"
   | "room-conflict"
+  | "room-missing-features"
   | "time-invalid"
   | "time-order"
   | "after-hours"
@@ -178,6 +184,24 @@ function timeIssues(start: number | null, end: number | null): ValidationIssue[]
   return [];
 }
 
+function featureIssues(
+  roomId: string,
+  required: readonly string[],
+  rooms: readonly RoomCapacity[],
+): ValidationIssue[] {
+  const room = rooms.find((candidate) => candidate.id === roomId);
+  if (!room?.features || required.length === 0) return [];
+  const missing = required.filter((feature) => !room.features?.includes(feature));
+  if (missing.length === 0) return [];
+  return [
+    {
+      code: "room-missing-features",
+      severity: "warn",
+      message: `${room.name} does not list ${missing.join(", ")}. Choose a recommended room or arrange it separately.`,
+    },
+  ];
+}
+
 function conflictIssues(
   form: ReservationForm,
   rooms: readonly RoomCapacity[],
@@ -216,6 +240,7 @@ export function validateReservation(
     ...attendanceIssues(form.attendance, parsedAttendance),
     ...roomIssues(form.room, attendance, rooms),
     ...conflictIssues(form, rooms, reservations),
+    ...featureIssues(form.room, form.requiredFeatures, rooms),
   ];
 
   let afterHours = false;

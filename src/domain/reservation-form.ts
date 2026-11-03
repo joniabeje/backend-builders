@@ -22,6 +22,7 @@ export const EMPTY_RESERVATION_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 export type ReservationFormState = {

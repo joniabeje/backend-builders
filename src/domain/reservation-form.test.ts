@@ -23,6 +23,7 @@ const VALID_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 const reduce = createReservationFormReducer(ROOMS);

@@ -29,6 +29,7 @@ const VALID_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 const EMPTY_FORM: ReservationForm = {
@@ -44,6 +45,7 @@ const EMPTY_FORM: ReservationForm = {
   hasFood: false,
   externalGuests: false,
   itNeeds: false,
+  requiredFeatures: [],
 };
 
 function codesFor(overrides: Partial<ReservationForm>): IssueCode[] {
@@ -225,5 +227,32 @@ describe("validateReservation double-booking check", () => {
 
   it("skips the check when no reservations are passed, as before #3", () => {
     assert.equal(validateReservation(VALID_FORM, ROOMS).canSubmit, true);
+  });
+});
+
+describe("validateReservation required features", () => {
+  const WITH_FEATURES: RoomCapacity[] = [
+    { id: "seminar-201", name: "Seminar Room 201", capacity: 25, features: ["Whiteboard"] },
+  ];
+
+  it("warns, without blocking, when the selected room lacks a required feature", () => {
+    const result = validateReservation(
+      { ...VALID_FORM, requiredFeatures: ["Projector", "Whiteboard"] },
+      WITH_FEATURES,
+    );
+    assert.deepEqual(result.issues, [
+      {
+        code: "room-missing-features",
+        severity: "warn",
+        message:
+          "Seminar Room 201 does not list Projector. Choose a recommended room or arrange it separately.",
+      },
+    ]);
+    assert.equal(result.canSubmit, true);
+  });
+
+  it("raises nothing when the room has every required feature", () => {
+    const form = { ...VALID_FORM, requiredFeatures: ["Whiteboard"] };
+    assert.deepEqual(validateReservation(form, WITH_FEATURES).issues, []);
   });
 });

@@ -6,9 +6,10 @@ import {
 } from "@/domain/reservation-form";
 import { validateReservation, type ReservationForm } from "@/domain/reservation-validation";
 import { getRoomAvailability, isCompleteSlot } from "@/domain/room-availability";
+import { recommendRooms } from "@/domain/room-recommendation";
 import type { EventRequest } from "@/domain/reservation";
 import { useReservations } from "@/hooks/use-reservations";
-import { ROOMS, recommendRooms } from "@/lib/rooms";
+import { ROOMS } from "@/lib/rooms";
 
 const reservationFormReducer = createReservationFormReducer(ROOMS);
 const ROOM_IDS = ROOMS.map((room) => room.id);
@@ -53,12 +54,33 @@ export function useReservationForm() {
     [availabilityStatus, availability],
   );
 
+  // Until reservations load, recommend on capacity and features only; the UI says
+  // availability is not checked yet and submit stays blocked.
+  const recommendationReservations = reservationsLoaded ? reservations : NO_RESERVATIONS;
+  const { requiredFeatures, room: preferredRoomId } = form;
   const recommendations = useMemo(
     () =>
-      recommendRooms(validation.attendance).filter((room) =>
-        availableRooms.some((available) => available.id === room.id),
+      recommendRooms(
+        {
+          attendance: validation.attendance,
+          date,
+          startTime,
+          endTime,
+          requiredFeatures,
+          preferredRoomId,
+        },
+        ROOMS,
+        recommendationReservations,
       ),
-    [validation.attendance, availableRooms],
+    [
+      validation.attendance,
+      date,
+      startTime,
+      endTime,
+      requiredFeatures,
+      preferredRoomId,
+      recommendationReservations,
+    ],
   );
 
   // Without the existing reservations a double booking cannot be ruled out.
