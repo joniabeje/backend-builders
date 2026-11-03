@@ -107,25 +107,7 @@ export function getRoomDisplayName(id: string): string {
   }
 }
 
-const MAX_REASONABLE_ATTENDANCE = 5000;
-
-/**
- * Recommend up to 3 rooms that fit attendance without being massively oversized.
- * Rejects NaN, non-finite, and absurd values instead of returning junk matches.
- */
-export function recommendRooms(attendance: number): Room[] {
-  if (
-    typeof attendance !== "number" ||
-    !Number.isFinite(attendance) ||
-    attendance < 1 ||
-    attendance > MAX_REASONABLE_ATTENDANCE
-  ) {
-    return [];
-  }
-
-  const needed = Math.floor(attendance);
-
-  return ROOMS.filter((r) => r.capacity >= needed && r.capacity <= needed * 3)
-    .sort((a, b) => a.capacity - b.capacity)
-    .slice(0, 3);
-}
+/** Every feature listed by at least one room, for the "required features" picker. */
+export const ROOM_FEATURES: readonly string[] = [
+  ...new Set(ROOMS.flatMap((room) => room.features)),
+].sort((a, b) => a.localeCompare(b));
