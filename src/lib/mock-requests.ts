@@ -18,6 +18,7 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     afterHours: true,
     itNeeds: true,
     submittedAt: "2026-04-27",
+    history: [],
   },
   {
     id: "REQ-1041",
@@ -35,6 +36,9 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     afterHours: true,
     itNeeds: true,
     submittedAt: "2026-04-22",
+    history: [
+      { from: "pending", to: "approved", actor: "Dean's Office", at: "2026-04-24T15:20:00.000Z" },
+    ],
   },
   {
     id: "REQ-1040",
@@ -52,6 +56,9 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     afterHours: false,
     itNeeds: true,
     submittedAt: "2026-04-20",
+    history: [
+      { from: "pending", to: "approved", actor: "Dean's Office", at: "2026-04-21T13:05:00.000Z" },
+    ],
   },
   {
     id: "REQ-1039",
@@ -69,6 +76,16 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     afterHours: true,
     itNeeds: false,
     submittedAt: "2026-04-25",
+    history: [
+      {
+        from: "pending",
+        to: "needs-changes",
+        actor: "Dean's Office",
+        feedback:
+          "180 guests is over the Atrium's standing limit once catering is set up. Please cap RSVPs at 150 or end by 21:00.",
+        at: "2026-04-28T16:42:00.000Z",
+      },
+    ],
   },
   {
     id: "REQ-1038",
@@ -86,5 +103,15 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     afterHours: false,
     itNeeds: true,
     submittedAt: "2026-04-18",
+    history: [
+      {
+        from: "pending",
+        to: "rejected",
+        actor: "Dean's Office",
+        feedback:
+          "LKD Conference Room A is reserved for accreditation interviews that day. Please resubmit for another date.",
+        at: "2026-04-19T14:10:00.000Z",
+      },
+    ],
   },
 ];

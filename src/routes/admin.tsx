@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StatusBadge } from "@/components/StatusBadge";
+import { StatusTimeline } from "@/components/StatusTimeline";
+import { ReviewDecisionDialog } from "@/components/admin/ReviewDecisionDialog";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/domain/reservation";
-import { useReservations, useUpdateReservationStatus } from "@/hooks/use-reservations";
+import type { ReviewDecision } from "@/domain/review-decision";
+import { useReservations, useReviewReservation } from "@/hooks/use-reservations";
 import { riskScore } from "@/lib/risk-score";
 import { getRoomDisplayName } from "@/lib/rooms";
 import {
@@ -15,6 +18,8 @@ import {
   Inbox,
   ShieldCheck,
   Activity,
+  MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -36,19 +41,61 @@ const riskStyles = {
   high: "bg-destructive/15 text-destructive border-destructive/40",
 };
 
+const DECISION_ACTIONS: {
+  decision: ReviewDecision;
+  label: string;
+  icon: typeof CheckCircle2;
+  className: string;
+}[] = [
+  {
+    decision: "approved",
+    label: "Approve",
+    icon: CheckCircle2,
+    className: "bg-success/10 text-success hover:bg-success/20",
+  },
+  {
+    decision: "needs-changes",
+    label: "Request changes",
+    icon: MessageSquare,
+    className: "bg-primary/10 text-primary hover:bg-primary/20",
+  },
+  {
+    decision: "rejected",
+    label: "Reject",
+    icon: XCircle,
+    className: "bg-destructive/10 text-destructive hover:bg-destructive/20",
+  },
+];
+
 function AdminPage() {
   const { data: requests = [], isPending, isError, error } = useReservations();
-  const updateStatus = useUpdateReservationStatus();
+  const review = useReviewReservation();
   const [filter, setFilter] = useState<"all" | RequestStatus>("all");
+  const [pendingDecision, setPendingDecision] = useState<{
+    id: string;
+    decision: ReviewDecision;
+  } | null>(null);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
-
-  function setStatus(id: string, status: RequestStatus) {
-    updateStatus.mutate({ id, status });
-  }
+  const dialogRequest = requests.find((r) => r.id === pendingDecision?.id);
 
   function isUpdating(id: string): boolean {
-    return updateStatus.isPending && updateStatus.variables?.id === id;
+    return review.isPending && review.variables?.id === id;
+  }
+
+  function toggleHistory(id: string) {
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function confirmDecision(feedback: string) {
+    if (!pendingDecision) return;
+    review.mutate({ ...pendingDecision, feedback }, { onSuccess: () => setPendingDecision(null) });
   }
 
   const stats = [
@@ -116,7 +163,7 @@ function AdminPage() {
           ))}
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card shadow-card">
+        <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-card shadow-card">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -131,65 +178,86 @@ function AdminPage() {
             <tbody className="divide-y divide-border">
               {filtered.map((r) => {
                 const risk = riskScore(r);
+                const historyOpen = expanded.has(r.id);
                 return (
-                  <tr key={r.id} className="hover:bg-secondary/40 transition-smooth">
-                    <td className="px-4 py-4">
-                      <div className="font-semibold text-foreground">{r.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.organization} · {r.requester}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-foreground">{r.date}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.startTime}–{r.endTime}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-foreground">{getRoomDisplayName(r.room)}</div>
-                      <div className="text-xs text-muted-foreground">{r.attendance} attendees</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${riskStyles[risk.level]}`}
-                      >
-                        {risk.level !== "low" && <AlertTriangle className="h-3 w-3" />}
-                        {risk.level}
-                      </span>
-                      {risk.reasons.length > 0 && (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          {risk.reasons.join(" · ")}
+                  <Fragment key={r.id}>
+                    <tr className="hover:bg-secondary/40 transition-smooth">
+                      <td className="px-4 py-4">
+                        <div className="font-semibold text-foreground">{r.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.organization} · {r.requester}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <StatusBadge status={r.status} />
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <div className="inline-flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setStatus(r.id, "approved")}
-                          disabled={isUpdating(r.id)}
-                          title="Approve"
-                          aria-label={`Approve ${r.title}`}
-                          className="inline-flex items-center justify-center rounded-md bg-success/10 p-2 text-success transition-smooth hover:bg-success/20 disabled:opacity-50"
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-foreground">{r.date}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.startTime}–{r.endTime}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-foreground">{getRoomDisplayName(r.room)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {r.attendance} attendees
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${riskStyles[risk.level]}`}
                         >
-                          <CheckCircle2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStatus(r.id, "rejected")}
-                          disabled={isUpdating(r.id)}
-                          title="Reject"
-                          aria-label={`Reject ${r.title}`}
-                          className="inline-flex items-center justify-center rounded-md bg-destructive/10 p-2 text-destructive transition-smooth hover:bg-destructive/20 disabled:opacity-50"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          {risk.level !== "low" && <AlertTriangle className="h-3 w-3" />}
+                          {risk.level}
+                        </span>
+                        {risk.reasons.length > 0 && (
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            {risk.reasons.join(" · ")}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="inline-flex gap-1.5">
+                          {DECISION_ACTIONS.map(({ decision, label, icon: Icon, className }) => (
+                            <button
+                              key={decision}
+                              type="button"
+                              onClick={() => setPendingDecision({ id: r.id, decision })}
+                              disabled={isUpdating(r.id)}
+                              title={label}
+                              aria-label={`${label} ${r.title}`}
+                              className={`inline-flex items-center justify-center rounded-md p-2 transition-smooth disabled:opacity-50 ${className}`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => toggleHistory(r.id)}
+                            title="View history"
+                            aria-label={`View history for ${r.title}`}
+                            aria-expanded={historyOpen}
+                            aria-controls={`history-${r.id}`}
+                            className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground"
+                          >
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${historyOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {historyOpen && (
+                      <tr id={`history-${r.id}`}>
+                        <td colSpan={6} className="bg-secondary/40 px-6 py-5">
+                          <h3 className="mb-4 text-sm font-semibold text-foreground">
+                            Status history · {r.id}
+                          </h3>
+                          <StatusTimeline entries={r.history} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
               {isPending && (
@@ -221,6 +289,18 @@ function AdminPage() {
           </table>
         </div>
       </main>
+      {pendingDecision && dialogRequest && (
+        <ReviewDecisionDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPendingDecision(null);
+          }}
+          request={dialogRequest}
+          decision={pendingDecision.decision}
+          pending={review.isPending}
+          onConfirm={confirmDecision}
+        />
+      )}
       <SiteFooter />
     </div>
   );

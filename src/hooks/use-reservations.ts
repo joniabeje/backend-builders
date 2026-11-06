@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useReservationRepository } from "@/data/reservation-repository-context";
-import type { EventRequest, RequestStatus } from "@/domain/reservation";
+import type { EventRequest } from "@/domain/reservation";
+import type { ReviewInput } from "@/domain/review-decision";
 
 const reservationKeys = {
   all: ["reservations"] as const,
@@ -16,27 +17,33 @@ export function useReservations() {
   });
 }
 
-type StatusChange = { id: string; status: RequestStatus };
+export type ReviewVariables = ReviewInput & { id: string };
 
 /**
- * Updates a reservation's status. The list updates immediately; if the repository
+ * Records an admin decision. The status badge updates immediately; the history entry
+ * comes from the repository, which owns the reviewer and timestamp. If the repository
  * rejects, the previous list is restored and the user is told why.
  */
-export function useUpdateReservationStatus() {
+export function useReviewReservation() {
   const repository = useReservationRepository();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status }: StatusChange) => repository.updateStatus(id, status),
-    onMutate: async ({ id, status }) => {
+    mutationFn: ({ id, ...input }: ReviewVariables) => repository.review(id, input),
+    onMutate: async ({ id, decision }) => {
       await queryClient.cancelQueries({ queryKey: reservationKeys.list() });
       const previous = queryClient.getQueryData<EventRequest[]>(reservationKeys.list());
       queryClient.setQueryData<EventRequest[]>(reservationKeys.list(), (current) =>
         current?.map((reservation) =>
-          reservation.id === id ? { ...reservation, status } : reservation,
+          reservation.id === id ? { ...reservation, status: decision } : reservation,
         ),
       );
       return { previous };
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData<EventRequest[]>(reservationKeys.list(), (current) =>
+        current?.map((reservation) => (reservation.id === updated.id ? updated : reservation)),
+      );
     },
     onError: (error, { id }, context) => {
       if (context?.previous) {
