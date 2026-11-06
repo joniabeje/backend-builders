@@ -16,9 +16,19 @@ export function isRequestStatus(value: unknown): value is RequestStatus {
   return typeof value === "string" && (REQUEST_STATUSES as readonly string[]).includes(value);
 }
 
+/** One entry in a reservation's audit trail. `at` is an ISO-8601 timestamp. */
+export type StatusChange = {
+  from: RequestStatus;
+  to: RequestStatus;
+  actor: string;
+  feedback?: string;
+  at: string;
+};
+
 /**
  * `room` stores a stable ROOMS id (e.g. "atrium"), not a free-text label.
  * Display names come from getRoomDisplayName / getRoomById in rooms.ts.
+ * `history` is oldest-first.
  */
 export type EventRequest = {
   id: string;
@@ -36,4 +46,5 @@ export type EventRequest = {
   afterHours: boolean;
   itNeeds: boolean;
   submittedAt: string;
+  history: readonly StatusChange[];
 };

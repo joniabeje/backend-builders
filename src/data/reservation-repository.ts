@@ -1,4 +1,5 @@
-import type { EventRequest, RequestStatus } from "@/domain/reservation";
+import type { EventRequest } from "@/domain/reservation";
+import type { ReviewInput } from "@/domain/review-decision";
 
 /**
  * Data-access boundary for reservations. UI code depends on this interface only,
@@ -7,8 +8,12 @@ import type { EventRequest, RequestStatus } from "@/domain/reservation";
  */
 export interface ReservationRepository {
   list(): Promise<EventRequest[]>;
-  /** Resolves with the updated reservation; rejects with ReservationNotFoundError for unknown ids. */
-  updateStatus(id: string, status: RequestStatus): Promise<EventRequest>;
+  /**
+   * Records an admin decision: sets the status and appends a history entry.
+   * Resolves with the updated reservation; rejects with ReservationNotFoundError for
+   * unknown ids and ReviewFeedbackError when required feedback is missing.
+   */
+  review(id: string, input: ReviewInput): Promise<EventRequest>;
 }
 
 export class ReservationNotFoundError extends Error {
