@@ -133,7 +133,7 @@ Manual walkthrough in the browser (`npm run dev`):
 - [x] Typing "Too late" (8 characters) shows "Feedback must be at least 10 characters." and Confirm
       stays disabled. With a full sentence, Confirm enables.
 - [x] Confirming closes the dialog, the badge becomes Rejected, and Pending Review drops from 1 to 0.
-      The chevron shows "Pending → Rejected · Dean's Office · <time> UTC" with the quoted feedback.
+      The chevron shows "Pending → Rejected · Dean's Office · Nov 6, 2026, 4:26 AM UTC" with the quoted feedback.
 - [x] Request changes on the same request, then navigating to **My Requests**: the card shows Needs
       Changes, the counts update, the "Dean's Office feedback" callout shows the new text, and
       "View history" lists the entry.
