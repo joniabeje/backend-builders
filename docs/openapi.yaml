@@ -20,8 +20,95 @@ servers:
 tags:
   - name: rooms
   - name: reservations
+  - name: auth
 
 paths:
+  /api/auth/sign-in:
+    post:
+      tags: [auth]
+      summary: Sign in with email and password
+      description: |
+        Creates a session document and sets the HttpOnly `cea_session` cookie.
+        Demo accounts are seeded by `npm run seed` (#60).
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Signed in. `Set-Cookie` carries `cea_session`.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user:
+                    $ref: "#/components/schemas/PublicUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/sign-out:
+    post:
+      tags: [auth]
+      summary: Sign out
+      description: Deletes the session (if any) and clears the `cea_session` cookie.
+      operationId: signOut
+      responses:
+        "200":
+          description: Signed out.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Current signed-in user
+      operationId: currentUser
+      responses:
+        "200":
+          description: The user for the `cea_session` cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user:
+                    $ref: "#/components/schemas/PublicUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/rooms:
     get:
       tags: [rooms]
@@ -154,6 +241,25 @@ components:
         pattern: "^REQ-[0-9]+$"
 
   schemas:
+    Role:
+      type: string
+      enum: [student, advisor, admin, facilities]
+
+    PublicUser:
+      type: object
+      additionalProperties: false
+      required: [id, email, name, role]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+
     RequestStatus:
       type: string
       enum: [pending, approved, needs-changes, rejected]
@@ -465,10 +571,16 @@ components:
             oneOf:
               - $ref: "#/components/schemas/ValidationError"
               - $ref: "#/components/schemas/ErrorMessage"
+    Unauthorized:
+      description: Missing, invalid, or expired session, or bad sign-in credentials.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
     Forbidden:
       description: |
-        Reserved for authenticated role checks (#14). Not returned by the
-        current implementation.
+        Reserved for authenticated role checks (#62). Not returned by the
+        current implementation except where noted.
       content:
         application/json:
           schema:

@@ -1,5 +1,7 @@
-// Firestore document shapes for rooms, reservations and their status history (#54), and
-// the mapping to the domain types the rest of the app uses. See docs/ARCHITECTURE.md.
+// Firestore document shapes for rooms, reservations and their status history (#54),
+// users and sessions (#60), and the mapping to the domain types the rest of the app
+// uses. See docs/ARCHITECTURE.md.
+import type { Role } from "@/domain/auth";
 import { isRequestStatus, type EventRequest, type StatusChange } from "@/domain/reservation";
 
 export const COLLECTIONS = {
@@ -7,6 +9,8 @@ export const COLLECTIONS = {
   reservations: "reservations",
   /** Subcollection of each reservation: one document per status change. */
   history: "history",
+  users: "users",
+  sessions: "sessions",
 } as const;
 
 /** `rooms/{roomId}`. The id is the stable room id, e.g. "seminar-201". */
@@ -75,3 +79,19 @@ export function toRoomDoc(room: RoomDoc & { id: string }): RoomDoc {
   const { name, building, floor, capacity, features } = room;
   return { name, building, floor, capacity, features: [...features] };
 }
+
+/** `users/{userId}`. Password material never leaves the server. */
+export type UserDoc = {
+  email: string;
+  name: string;
+  role: Role;
+  passwordHash: string;
+  passwordSalt: string;
+};
+
+/** `sessions/{sessionId}`. `expiresAt` is an ISO-8601 timestamp. */
+export type SessionDoc = {
+  userId: string;
+  role: Role;
+  expiresAt: string;
+};

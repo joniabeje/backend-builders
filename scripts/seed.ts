@@ -1,5 +1,5 @@
-// npm run seed            rooms and demo reservations into the running emulator
-// npm run seed -- --rooms-only   rooms only; required for a real project (FIREBASE_PROJECT_ID)
+// npm run seed            rooms, demo reservations, and demo accounts into the emulator
+// npm run seed -- --rooms-only   rooms + accounts only; required for a real project
 import { EMULATOR_PROJECT_ID, getDb } from "@/server/firestore.server";
 import { seedDatabase } from "@/server/seed.server";
 
@@ -15,7 +15,7 @@ const target = emulator
 
 if (!emulator && !roomsOnly) {
   console.error(
-    `Refusing to write demo reservations into ${target}. Pass --rooms-only to seed the room catalog only.`,
+    `Refusing to write demo reservations into ${target}. Pass --rooms-only to seed the room catalog and accounts only.`,
   );
   process.exit(1);
 }
@@ -24,7 +24,7 @@ try {
   const counts = await seedDatabase(getDb(), roomsOnly ? { reservations: [] } : {});
   console.log(
     `Seeded ${target}: ${counts.rooms} rooms, ${counts.reservations} reservations, ` +
-      `${counts.historyEntries} history entries.`,
+      `${counts.historyEntries} history entries, ${counts.users} users.`,
   );
   process.exit(0);
 } catch (error) {

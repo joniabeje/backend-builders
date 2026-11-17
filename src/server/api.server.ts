@@ -1,4 +1,4 @@
-// Shared HTTP helpers for the /api server routes (#55).
+// Shared HTTP helpers for the /api server routes (#55, #60).
 import {
   ReservationConflictError,
   ReservationNotFoundError,
@@ -6,12 +6,13 @@ import {
 } from "@/data/reservation-repository";
 import type { NewReservation } from "@/domain/reservation";
 import { ReviewFeedbackError, type ReviewInput } from "@/domain/review-decision";
+import { InvalidCredentialsError, UnauthorizedError } from "./auth.server";
 
-export function json(data: unknown, status = 200): Response {
-  return Response.json(data, { status });
+export function json(data: unknown, status = 200, init: ResponseInit = {}): Response {
+  return Response.json(data, { ...init, status });
 }
 
-/** Maps domain errors from ReservationsApi to HTTP responses. */
+/** Maps domain errors from ReservationsApi / AuthApi to HTTP responses. */
 export function errorResponse(error: unknown): Response {
   if (error instanceof ReservationValidationError) {
     return json({ error: error.message, issues: error.issues }, 400);
@@ -37,6 +38,9 @@ export function errorResponse(error: unknown): Response {
   }
   if (error instanceof ReservationNotFoundError) {
     return json({ error: error.message }, 404);
+  }
+  if (error instanceof InvalidCredentialsError || error instanceof UnauthorizedError) {
+    return json({ error: error.message }, 401);
   }
   if (error instanceof TypeError) {
     return json({ error: error.message }, 400);

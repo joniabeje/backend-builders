@@ -67,7 +67,8 @@ flowchart LR
 
 - Java 21 or newer is required for the Firebase Emulator (`winget install Microsoft.OpenJDK.21` on Windows).
 - `npm run emulators` starts Firestore locally under the placeholder project `demo-cea-reserve`. `demo-` projects never reach Google's servers and need no credentials.
-- With the emulator running, `npm run seed` loads the room catalog and the demo reservations with their history. It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo data and needs `--rooms-only`.
+- With the emulator running, `npm run seed` loads the room catalog, demo reservations, and one account per role (#60). It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo reservations and needs `--rooms-only` (still seeds rooms and accounts).
+- Demo passwords (emulator / local only): `student@cea.howard.edu` / `student-demo`, `advisor@cea.howard.edu` / `advisor-demo`, `admin@cea.howard.edu` / `admin-demo`, `facilities@cea.howard.edu` / `facilities-demo`. Sign in with `POST /api/auth/sign-in`; the session cookie is `cea_session`.
 - For a local UI against Firestore: start `npm run emulators`, run `npm run seed`, then `npm run dev` (no `VITE_USE_MOCKS`). Submit on `/reserve` and refresh `/dashboard` — the request stays.
 - `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
 - The real Firebase project id is only needed for deployment.
@@ -80,7 +81,7 @@ flowchart LR
 | `reservations`              | request fields, `requesterId`, status, risk (`level`, `score`, `requiresReview`, `factors`), `submittedAt` | `POST` and `PATCH /reservations` |
 | `reservations/{id}/history` | one document per status change: from, to, actor, feedback, at                                              | `PATCH /reservations/:id` (#85)  |
 | `users`                     | email, name, role, password hash and salt                                                                  | seed script (#60)                |
-| `sessions`                  | userId, role, expiresAt                                                                                    | sign-in and sign-out             |
+| `sessions`                  | userId, role, expiresAt (ISO); id is the `cea_session` cookie value                                        | `POST /api/auth/sign-in` (#60)   |
 | `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                   |
 
 Reservations are never deleted, including rejected ones, so history and analytics stay complete (#50).
