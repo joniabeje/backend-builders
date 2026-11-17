@@ -1,12 +1,7 @@
 import { beforeEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { ROLES } from "@/domain/auth";
-import {
-  AuthApi,
-  ForbiddenError,
-  InvalidCredentialsError,
-  UnauthorizedError,
-} from "./auth.server";
+import { AuthApi, ForbiddenError, InvalidCredentialsError, UnauthorizedError } from "./auth.server";
 import { getDb } from "./firestore.server";
 import { SEED_ACCOUNTS } from "./seed-accounts";
 import { clearEmulator } from "./testing/emulator";
