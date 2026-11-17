@@ -10,6 +10,10 @@ const isCI = Boolean(process.env.CI);
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // The Vite dev server compiles on demand, and more parallel browsers than this make
+  // hydration slow enough to trip assertion timeouts (seen at 4 workers on Windows).
+  workers: 2,
+  expect: { timeout: 10_000 },
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : [["list"]],

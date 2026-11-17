@@ -1,17 +1,17 @@
 import { useCallback, useMemo, useReducer } from "react";
 import {
   INITIAL_RESERVATION_FORM_STATE,
-  createReservationFormReducer,
+  prepareSubmission,
+  reservationFormReducer,
   type ReservationFormAction,
 } from "@/domain/reservation-form";
 import { validateReservation, type ReservationForm } from "@/domain/reservation-validation";
 import { getRoomAvailability, isCompleteSlot } from "@/domain/room-availability";
 import { recommendRooms } from "@/domain/room-recommendation";
 import type { EventRequest } from "@/domain/reservation";
-import { useReservations } from "@/hooks/use-reservations";
+import { useCreateReservation, useReservations } from "@/hooks/use-reservations";
 import { ROOMS } from "@/lib/rooms";
 
-const reservationFormReducer = createReservationFormReducer(ROOMS);
 const ROOM_IDS = ROOMS.map((room) => room.id);
 const NO_RESERVATIONS: readonly EventRequest[] = [];
 
@@ -24,13 +24,14 @@ export type AvailabilityStatus = "unchecked" | "loading" | "error" | "checked";
 
 /** Form state, live validation, room availability, and recommendations for the /reserve page. */
 export function useReservationForm() {
-  const [{ form, submitted }, dispatch] = useReducer(
+  const [{ form, submittedId }, dispatch] = useReducer(
     reservationFormReducer,
     INITIAL_RESERVATION_FORM_STATE,
   );
   const reservationsQuery = useReservations();
   const reservations = reservationsQuery.data ?? NO_RESERVATIONS;
   const reservationsLoaded = reservationsQuery.isSuccess;
+  const createReservation = useCreateReservation();
 
   const validation = validateReservation(form, ROOMS, reservations);
 
@@ -83,8 +84,9 @@ export function useReservationForm() {
     ],
   );
 
-  // Without the existing reservations a double booking cannot be ruled out.
-  const canSubmit = validation.canSubmit && reservationsLoaded;
+  // Without the existing reservations a double booking cannot be ruled out, and a
+  // request already being saved must not be sent twice.
+  const canSubmit = validation.canSubmit && reservationsLoaded && !createReservation.isPending;
 
   const update = useCallback(
     <K extends keyof ReservationForm>(field: K, value: ReservationForm[K]) =>
@@ -92,14 +94,26 @@ export function useReservationForm() {
       dispatch({ type: "update", field, value } as ReservationFormAction),
     [],
   );
+  const { mutate: saveReservation, reset: clearSaveError } = createReservation;
   const submit = useCallback(() => {
-    if (reservationsLoaded) dispatch({ type: "submit", reservations });
-  }, [reservationsLoaded, reservations]);
-  const reset = useCallback(() => dispatch({ type: "reset" }), []);
+    if (!reservationsLoaded) return;
+    const input = prepareSubmission(form, ROOMS, reservations);
+    if (!input) return;
+    saveReservation(input, {
+      onSuccess: (created) => dispatch({ type: "submitted", id: created.id }),
+    });
+  }, [form, reservationsLoaded, reservations, saveReservation]);
+  const reset = useCallback(() => {
+    clearSaveError();
+    dispatch({ type: "reset" });
+  }, [clearSaveError]);
 
   return {
     form,
-    submitted,
+    submittedId,
+    isSubmitting: createReservation.isPending,
+    /** Why the last save failed, or null. The form keeps everything the user typed. */
+    submitError: createReservation.error,
     validation: { ...validation, canSubmit },
     availabilityStatus,
     availableRooms,

@@ -56,7 +56,9 @@ function AvailabilityHint({
 function ReservePage() {
   const {
     form,
-    submitted,
+    submittedId,
+    isSubmitting,
+    submitError,
     validation,
     availabilityStatus,
     availableRooms,
@@ -72,12 +74,16 @@ function ReservePage() {
     form.room !== "" && !availableRooms.some((room) => room.id === form.room);
   const selectedRoom = ROOMS.find((room) => room.id === form.room);
 
-  if (submitted) {
+  if (submittedId !== null) {
     return (
       <div className="min-h-screen bg-background">
         <SiteNav />
         <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20">
-          <ReservationSuccess eventTitle={form.title} onNewRequest={reset} />
+          <ReservationSuccess
+            requestId={submittedId}
+            eventTitle={form.title}
+            onNewRequest={reset}
+          />
         </main>
         <SiteFooter />
       </div>
@@ -265,6 +271,16 @@ function ReservePage() {
               </div>
             </FormSection>
 
+            {submitError && (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                Your request was not submitted: {submitError.message} Your answers are still here,
+                so you can fix the problem and submit again.
+              </p>
+            )}
+
             <div className="flex items-center justify-between gap-4 border-t border-border pt-6">
               <p className="text-xs text-muted-foreground">Fields marked * are required.</p>
               <button
@@ -272,7 +288,7 @@ function ReservePage() {
                 disabled={!canSubmit}
                 className="inline-flex items-center gap-2 rounded-md bg-gradient-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant transition-smooth disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-95"
               >
-                Submit Request
+                {isSubmitting ? "Submitting…" : "Submit Request"}
               </button>
             </div>
           </form>

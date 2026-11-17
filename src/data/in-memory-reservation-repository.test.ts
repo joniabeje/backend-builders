@@ -1,9 +1,12 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import type { RequestStatus, UnscoredEventRequest } from "@/domain/reservation";
+import type { NewReservation, RequestStatus, UnscoredEventRequest } from "@/domain/reservation";
 import { ReviewFeedbackError, type ReviewDecision } from "@/domain/review-decision";
-import { InMemoryReservationRepository } from "./in-memory-reservation-repository";
-import { ReservationNotFoundError } from "./reservation-repository";
+import {
+  InMemoryReservationRepository,
+  UNVERIFIED_REQUESTER,
+} from "./in-memory-reservation-repository";
+import { ReservationConflictError, ReservationNotFoundError } from "./reservation-repository";
 
 function reservation(id: string, status: RequestStatus = "pending"): UnscoredEventRequest {
   return {
@@ -11,6 +14,8 @@ function reservation(id: string, status: RequestStatus = "pending"): UnscoredEve
     title: `Event ${id}`,
     organization: "NSBE",
     requester: "J. Abeje",
+    advisor: "Dr. Williams",
+    purpose: "Chapter meeting",
     date: "2026-11-04",
     startTime: "12:00",
     endTime: "13:00",
@@ -140,5 +145,116 @@ describe("InMemoryReservationRepository", () => {
       () => new InMemoryReservationRepository([reservation("A"), reservation("A")]),
       /Duplicate reservation id in seed: A/,
     );
+  });
+});
+
+describe("InMemoryReservationRepository.create", () => {
+  const NEW: NewReservation = {
+    title: "Robotics Workshop",
+    organization: "Bison Robotics",
+    advisor: "Dr. Harris",
+    purpose: "Hands-on workshop",
+    date: "2026-12-01",
+    startTime: "10:00",
+    endTime: "11:00",
+    attendance: 20,
+    room: "innovation",
+    hasFood: false,
+    externalGuests: false,
+    itNeeds: true,
+  };
+
+  it("stores a pending request with store-assigned fields and returns it", async () => {
+    const repository = new InMemoryReservationRepository([], { now: () => FIXED_NOW });
+    const created = await repository.create(NEW);
+
+    assert.deepEqual(
+      { ...created, risk: undefined },
+      {
+        ...NEW,
+        id: "REQ-1001",
+        requester: UNVERIFIED_REQUESTER,
+        status: "pending",
+        submittedAt: "2026-11-06",
+        history: [],
+        risk: undefined,
+      },
+    );
+    assert.deepEqual(await repository.list(), [created]);
+  });
+
+  it("numbers new ids one above the highest stored id", async () => {
+    const repository = new InMemoryReservationRepository([
+      reservation("REQ-1042"),
+      reservation("REQ-1038"),
+      reservation("legacy-id"),
+    ]);
+    assert.equal((await repository.create(NEW)).id, "REQ-1043");
+    assert.equal(
+      (await repository.create({ ...NEW, startTime: "11:00", endTime: "12:00" })).id,
+      "REQ-1044",
+    );
+  });
+
+  it("records the configured requester", async () => {
+    const repository = new InMemoryReservationRepository([], { requester: "J. Abeje" });
+    assert.equal((await repository.create(NEW)).requester, "J. Abeje");
+  });
+
+  it("computes risk from the submitted fields, deriving after-hours from the times", async () => {
+    const repository = new InMemoryReservationRepository([]);
+    const created = await repository.create({
+      ...NEW,
+      attendance: 200,
+      startTime: "19:00",
+      endTime: "22:00",
+      hasFood: true,
+    });
+    assert.equal(created.risk.level, "high");
+    assert.equal(created.risk.requiresReview, true);
+    assert.deepEqual(
+      created.risk.factors.map((factor) => factor.code),
+      ["large-attendance", "after-hours", "food-service"],
+    );
+  });
+
+  it("rejects a double booking and saves nothing", async () => {
+    const existing = {
+      ...reservation("REQ-1040"),
+      room: NEW.room,
+      date: NEW.date,
+      startTime: "10:30",
+      endTime: "12:00",
+    };
+    const repository = new InMemoryReservationRepository([existing]);
+
+    await assert.rejects(repository.create(NEW), (error: unknown) => {
+      assert.ok(error instanceof ReservationConflictError);
+      assert.deepEqual(
+        error.conflicts.map((c) => c.id),
+        ["REQ-1040"],
+      );
+      return true;
+    });
+    assert.equal((await repository.list()).length, 1);
+  });
+
+  it("allows the slot once the overlapping request is rejected", async () => {
+    const rejected = {
+      ...reservation("REQ-1040", "rejected"),
+      room: NEW.room,
+      date: NEW.date,
+      startTime: "10:00",
+      endTime: "11:00",
+    };
+    const repository = new InMemoryReservationRepository([rejected]);
+    assert.equal((await repository.create(NEW)).status, "pending");
+  });
+
+  it("returns a copy, so changing it does not change the stored request", async () => {
+    const repository = new InMemoryReservationRepository([]);
+    const created = await repository.create(NEW);
+    created.title = "Changed";
+    assert.equal((await repository.list())[0].title, NEW.title);
   });
 });

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useReservationRepository } from "@/data/reservation-repository-context";
-import type { EventRequest } from "@/domain/reservation";
+import type { EventRequest, NewReservation } from "@/domain/reservation";
 import type { ReviewInput } from "@/domain/review-decision";
 
 const reservationKeys = {
@@ -14,6 +14,26 @@ export function useReservations() {
   return useQuery({
     queryKey: reservationKeys.list(),
     queryFn: () => repository.list(),
+  });
+}
+
+/**
+ * Saves a new request (#2). On success the new reservation is added to the cached list,
+ * so /dashboard and /admin show it immediately, and the list is refetched. Errors are
+ * left to the caller, which shows them next to the form so nothing typed is lost.
+ */
+export function useCreateReservation() {
+  const repository = useReservationRepository();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: NewReservation) => repository.create(input),
+    onSuccess: (created) => {
+      queryClient.setQueryData<EventRequest[]>(reservationKeys.list(), (current) =>
+        current ? [created, ...current] : current,
+      );
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: reservationKeys.all }),
   });
 }
 

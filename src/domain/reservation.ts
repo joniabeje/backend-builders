@@ -38,7 +38,11 @@ export type EventRequest = {
   id: string;
   title: string;
   organization: string;
+  /** Who submitted the request. A placeholder until accounts exist (#14). */
   requester: string;
+  /** Faculty advisor's name, as entered on the form. */
+  advisor: string;
+  purpose: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -55,3 +59,23 @@ export type EventRequest = {
 
 /** A reservation before the store has scored it. Repositories add `risk` on save. */
 export type UnscoredEventRequest = Omit<EventRequest, "risk">;
+
+/**
+ * What a requester submits (#2). The store assigns everything else: id, requester,
+ * status, submittedAt, history and risk. Clients never send those.
+ */
+export type NewReservation = Pick<
+  EventRequest,
+  | "title"
+  | "organization"
+  | "advisor"
+  | "purpose"
+  | "date"
+  | "startTime"
+  | "endTime"
+  | "attendance"
+  | "room"
+  | "hasFood"
+  | "externalGuests"
+  | "itNeeds"
+>;

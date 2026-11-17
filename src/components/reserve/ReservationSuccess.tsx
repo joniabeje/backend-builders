@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 
 export function ReservationSuccess({
+  requestId,
   eventTitle,
   onNewRequest,
 }: {
+  requestId: string;
   eventTitle: string;
   onNewRequest: () => void;
 }) {
@@ -17,6 +19,12 @@ export function ReservationSuccess({
       <p className="mt-3 text-muted-foreground">
         Your reservation for <strong>{eventTitle}</strong> has been queued for review. You'll
         receive status updates as it moves through approval.
+      </p>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Request ID{" "}
+        <span className="rounded-md bg-secondary px-2 py-1 font-mono font-semibold text-foreground">
+          {requestId}
+        </span>
       </p>
       <div className="mt-8 flex justify-center gap-3">
         <Link
