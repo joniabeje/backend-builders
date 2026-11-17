@@ -17,10 +17,7 @@ describe("AuthApi", () => {
 
   it("seeds one account per role", async () => {
     assert.equal(SEED_ACCOUNTS.length, ROLES.length);
-    assert.deepEqual(
-      SEED_ACCOUNTS.map((account) => account.role).sort(),
-      [...ROLES].sort(),
-    );
+    assert.deepEqual(SEED_ACCOUNTS.map((account) => account.role).sort(), [...ROLES].sort());
   });
 
   it("signs in each seeded account and stores its role on the session", async () => {
