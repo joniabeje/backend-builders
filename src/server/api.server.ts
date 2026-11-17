@@ -74,7 +74,12 @@ export async function readNewReservation(request: Request): Promise<NewReservati
   }
   for (const key of NEW_RESERVATION_KEYS) {
     if (key === "attendance") continue;
-    if (key === "advisorApproved" || key === "hasFood" || key === "externalGuests" || key === "itNeeds") {
+    if (
+      key === "advisorApproved" ||
+      key === "hasFood" ||
+      key === "externalGuests" ||
+      key === "itNeeds"
+    ) {
       if (typeof body[key] !== "boolean") throw new TypeError(`${key} must be a boolean.`);
       continue;
     }

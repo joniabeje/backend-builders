@@ -64,7 +64,8 @@ describe("ReservationsApi", () => {
 
   it("rejects invalid create bodies with field errors", async () => {
     await assert.rejects(
-      () => api.createReservation({ ...VALID, advisorEmail: "not-an-email", advisorApproved: false }),
+      () =>
+        api.createReservation({ ...VALID, advisorEmail: "not-an-email", advisorApproved: false }),
       (error: unknown) => {
         assert.ok(error instanceof ReservationValidationError);
         const codes = error.issues.map((issue) => issue.code);

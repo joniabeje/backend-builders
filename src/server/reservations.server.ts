@@ -14,11 +14,7 @@ import {
   type RoomCapacity,
 } from "@/domain/reservation-validation";
 import { withRisk } from "@/domain/risk";
-import {
-  applyReviewDecision,
-  isReviewDecision,
-  type ReviewInput,
-} from "@/domain/review-decision";
+import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
 import { findConflicts } from "@/domain/room-availability";
 import { getDb } from "./firestore.server";
 import {
@@ -140,12 +136,7 @@ export class ReservationsApi {
     if (!snapshot.exists) throw new ReservationNotFoundError(id);
 
     const existing = await this.hydrate(id, snapshot.data() as ReservationDoc);
-    const updated = applyReviewDecision(
-      existing,
-      input,
-      this.reviewer,
-      this.now().toISOString(),
-    );
+    const updated = applyReviewDecision(existing, input, this.reviewer, this.now().toISOString());
     const newEntry = updated.history[updated.history.length - 1];
     const historyId = String(updated.history.length - 1).padStart(4, "0");
 

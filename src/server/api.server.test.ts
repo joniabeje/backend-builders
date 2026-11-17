@@ -89,8 +89,9 @@ describe("readReviewInput", () => {
 describe("errorResponse", () => {
   it("maps domain errors to the documented status codes", async () => {
     assert.equal(
-      errorResponse(new ReservationValidationError([{ code: "time-order", severity: "error", message: "bad" }]))
-        .status,
+      errorResponse(
+        new ReservationValidationError([{ code: "time-order", severity: "error", message: "bad" }]),
+      ).status,
       400,
     );
     assert.equal(errorResponse(new ReviewFeedbackError("rejected")).status, 400);
