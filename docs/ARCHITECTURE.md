@@ -12,7 +12,7 @@ flowchart LR
   Browser -- "imports" --> Domain
 ```
 
-- Pages read and write through the `ReservationRepository` interface (`src/data/`). Today that is the in-memory repository; the API repository replaces it in #57.
+- Pages read and write through the `ReservationRepository` interface (`src/data/`). The default is `ApiReservationRepository` against `/api` (#57). Set `VITE_USE_MOCKS=true` for the in-memory seed (Playwright, Lovable preview).
 - HTTP endpoints live under `/api` (`GET/POST /api/reservations`, `GET/PATCH /api/reservations/:id`, `GET /api/rooms`) and call `ReservationsApi` in `src/server/reservations.server.ts` (#55). Create runs `validateReservation` (400), `findConflicts` (409) and stores server-computed risk.
 - Every business rule lives once in `src/domain/` and runs in both places: in the browser for live feedback, and on the server as the check that counts.
 - The browser never talks to Firestore directly. Only the server does, with the Admin SDK.
@@ -68,6 +68,7 @@ flowchart LR
 - Java 21 or newer is required for the Firebase Emulator (`winget install Microsoft.OpenJDK.21` on Windows).
 - `npm run emulators` starts Firestore locally under the placeholder project `demo-cea-reserve`. `demo-` projects never reach Google's servers and need no credentials.
 - With the emulator running, `npm run seed` loads the room catalog and the demo reservations with their history. It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo data and needs `--rooms-only`.
+- For a local UI against Firestore: start `npm run emulators`, run `npm run seed`, then `npm run dev` (no `VITE_USE_MOCKS`). Submit on `/reserve` and refresh `/dashboard` — the request stays.
 - `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
 - The real Firebase project id is only needed for deployment.
 
