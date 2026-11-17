@@ -1,0 +1,493 @@
+openapi: 3.1.0
+info:
+  title: CEA Event Space Reservation API
+  version: 0.1.0
+  description: |
+    HTTP API for rooms and reservations (#55–#57). Implemented as TanStack Start
+    server routes under `/api`. The browser never talks to Firestore; only these
+    endpoints (and the Admin SDK on the server) do.
+
+    **Auth.** Sign-in is not enforced yet (#14). `403` is reserved for admin-only
+    mutations once sessions exist (#62, #86). Until then, anyone who can reach the
+    server can call every method.
+
+    **Local use.** Start the Firestore emulator, run `npm run seed`, then
+    `npm run dev`. Point clients at the same origin (for example
+    `http://127.0.0.1:8080`).
+servers:
+  - url: /
+    description: Same origin as the TanStack Start app
+tags:
+  - name: rooms
+  - name: reservations
+
+paths:
+  /api/rooms:
+    get:
+      tags: [rooms]
+      summary: List rooms
+      description: |
+        Returns every room document in Firestore (seeded from the CEA catalog).
+        Image assets stay in the client bundle and are not part of this response.
+      operationId: listRooms
+      responses:
+        "200":
+          description: Rooms, sorted by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/reservations:
+    get:
+      tags: [reservations]
+      summary: List reservations
+      description: All reservations, newest `submittedAt` first, each with history and risk.
+      operationId: listReservations
+      responses:
+        "200":
+          description: Reservation list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [reservations]
+      summary: Create a reservation
+      description: |
+        Accepts only `NewReservation` fields. The server assigns `id`, `requester`,
+        `status` (`pending`), `submittedAt`, empty `history`, and computes `risk`.
+        Client-supplied `id`, `status`, `risk`, or `requester` are ignored.
+
+        Runs `validateReservation` then `findConflicts`. Field errors → `400`.
+        Double booking → `409`.
+      operationId: createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewReservation"
+      responses:
+        "201":
+          description: Created reservation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/reservations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ReservationId"
+    get:
+      tags: [reservations]
+      summary: Get one reservation
+      operationId: getReservation
+      responses:
+        "200":
+          description: The reservation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    patch:
+      tags: [reservations]
+      summary: Review a reservation
+      description: |
+        Applies an admin decision (`approved`, `needs-changes`, or `rejected`),
+        updates `status`, and appends one history entry. Reject / request-changes
+        need at least 10 characters of feedback.
+
+        `403` will be returned for non-admins once auth lands (#62, #86).
+      operationId: reviewReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "200":
+          description: Updated reservation, including the new history entry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  parameters:
+    ReservationId:
+      name: id
+      in: path
+      required: true
+      description: Reservation id, for example `REQ-1043`.
+      schema:
+        type: string
+        pattern: "^REQ-[0-9]+$"
+
+  schemas:
+    RequestStatus:
+      type: string
+      enum: [pending, approved, needs-changes, rejected]
+
+    ReviewDecision:
+      type: string
+      enum: [approved, needs-changes, rejected]
+
+    RiskLevel:
+      type: string
+      enum: [low, medium, high]
+
+    RiskFactorCode:
+      type: string
+      enum:
+        - large-attendance
+        - elevated-attendance
+        - external-guests
+        - after-hours
+        - food-service
+        - security-staffing
+        - invalid-input
+
+    RiskFactor:
+      type: object
+      additionalProperties: false
+      required: [code, points, reason]
+      properties:
+        code:
+          $ref: "#/components/schemas/RiskFactorCode"
+        points:
+          type: integer
+        reason:
+          type: string
+
+    RiskAssessment:
+      type: object
+      additionalProperties: false
+      required: [level, score, factors, requiresReview, reviewReason]
+      properties:
+        level:
+          $ref: "#/components/schemas/RiskLevel"
+        score:
+          type: integer
+          minimum: 0
+        factors:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskFactor"
+        requiresReview:
+          type: boolean
+        reviewReason:
+          type: [string, "null"]
+
+    StatusChange:
+      type: object
+      additionalProperties: false
+      required: [from, to, actor, at]
+      properties:
+        from:
+          $ref: "#/components/schemas/RequestStatus"
+        to:
+          $ref: "#/components/schemas/RequestStatus"
+        actor:
+          type: string
+        feedback:
+          type: string
+        at:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp.
+
+    Room:
+      type: object
+      additionalProperties: false
+      required: [id, name, building, floor, capacity, features]
+      properties:
+        id:
+          type: string
+          description: Stable room id, for example `seminar-201`.
+        name:
+          type: string
+        building:
+          type: string
+        floor:
+          type: string
+        capacity:
+          type: integer
+          minimum: 1
+        features:
+          type: array
+          items:
+            type: string
+
+    NewReservation:
+      type: object
+      additionalProperties: true
+      description: |
+        Fields the client may send on create. Extra properties such as `id`,
+        `status`, `risk`, and `requester` are ignored by the server.
+      required:
+        - title
+        - organization
+        - advisor
+        - advisorEmail
+        - advisorApproved
+        - purpose
+        - date
+        - startTime
+        - endTime
+        - attendance
+        - room
+        - hasFood
+        - externalGuests
+        - itNeeds
+      properties:
+        title:
+          type: string
+        organization:
+          type: string
+        advisor:
+          type: string
+        advisorEmail:
+          type: string
+          format: email
+        advisorApproved:
+          type: boolean
+        purpose:
+          type: string
+        date:
+          type: string
+          format: date
+          description: YYYY-MM-DD
+        startTime:
+          type: string
+          description: HH:mm (24h)
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        endTime:
+          type: string
+          description: HH:mm (24h)
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        attendance:
+          type: integer
+        room:
+          type: string
+          description: A `Room.id`.
+        hasFood:
+          type: boolean
+        externalGuests:
+          type: boolean
+        itNeeds:
+          type: boolean
+
+    Reservation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - title
+        - organization
+        - requester
+        - advisor
+        - advisorEmail
+        - advisorApproved
+        - purpose
+        - date
+        - startTime
+        - endTime
+        - attendance
+        - room
+        - status
+        - hasFood
+        - externalGuests
+        - itNeeds
+        - submittedAt
+        - history
+        - risk
+      properties:
+        id:
+          type: string
+          example: REQ-1043
+        title:
+          type: string
+        organization:
+          type: string
+        requester:
+          type: string
+          description: Placeholder until accounts exist (#14).
+        advisor:
+          type: string
+        advisorEmail:
+          type: string
+        advisorApproved:
+          type: boolean
+        purpose:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        attendance:
+          type: integer
+        room:
+          type: string
+        status:
+          $ref: "#/components/schemas/RequestStatus"
+        hasFood:
+          type: boolean
+        externalGuests:
+          type: boolean
+        itNeeds:
+          type: boolean
+        submittedAt:
+          type: string
+          description: YYYY-MM-DD when the server accepted the request.
+        history:
+          type: array
+          description: Oldest first.
+          items:
+            $ref: "#/components/schemas/StatusChange"
+        risk:
+          $ref: "#/components/schemas/RiskAssessment"
+
+    ReviewInput:
+      type: object
+      additionalProperties: false
+      required: [decision, feedback]
+      properties:
+        decision:
+          $ref: "#/components/schemas/ReviewDecision"
+        feedback:
+          type: string
+          description: |
+            Required (≥ 10 characters after trim) for `needs-changes` and
+            `rejected`. Optional for `approved`.
+
+    ValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [error, warn]
+        message:
+          type: string
+
+    BookedSlot:
+      type: object
+      additionalProperties: false
+      required: [id, room, date, startTime, endTime, status]
+      properties:
+        id:
+          type: string
+        room:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        status:
+          $ref: "#/components/schemas/RequestStatus"
+
+    ErrorMessage:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    ValidationError:
+      allOf:
+        - $ref: "#/components/schemas/ErrorMessage"
+        - type: object
+          properties:
+            issues:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationIssue"
+
+    ConflictError:
+      allOf:
+        - $ref: "#/components/schemas/ErrorMessage"
+        - type: object
+          required: [conflicts]
+          properties:
+            conflicts:
+              type: array
+              items:
+                $ref: "#/components/schemas/BookedSlot"
+
+  responses:
+    BadRequest:
+      description: |
+        Malformed JSON, wrong field types, validation errors on create, or
+        missing review feedback on patch.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ValidationError"
+              - $ref: "#/components/schemas/ErrorMessage"
+    Forbidden:
+      description: |
+        Reserved for authenticated role checks (#14). Not returned by the
+        current implementation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    NotFound:
+      description: No reservation with that id.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Conflict:
+      description: The room is already held for an overlapping time.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ConflictError"
+    InternalError:
+      description: Unexpected server failure.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
