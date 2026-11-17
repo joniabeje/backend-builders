@@ -13,6 +13,7 @@ flowchart LR
 ```
 
 - Pages read and write through the `ReservationRepository` interface (`src/data/`). Today that is the in-memory repository; the API repository replaces it in #57.
+- HTTP endpoints live under `/api` (`GET/POST /api/reservations`, `GET/PATCH /api/reservations/:id`, `GET /api/rooms`) and call `ReservationsApi` in `src/server/reservations.server.ts` (#55). Create runs `validateReservation` (400), `findConflicts` (409) and stores server-computed risk.
 - Every business rule lives once in `src/domain/` and runs in both places: in the browser for live feedback, and on the server as the check that counts.
 - The browser never talks to Firestore directly. Only the server does, with the Admin SDK.
 
