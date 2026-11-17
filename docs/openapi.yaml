@@ -7,9 +7,10 @@ info:
     server routes under `/api`. The browser never talks to Firestore; only these
     endpoints (and the Admin SDK on the server) do.
 
-    **Auth.** Sign-in is not enforced yet (#14). `403` is reserved for admin-only
-    mutations once sessions exist (#62, #86). Until then, anyone who can reach the
-    server can call every method.
+    **Auth.** `POST /api/auth/sign-in` sets the HttpOnly `cea_session` cookie.
+    `PATCH /api/reservations/{id}` requires an **admin** session: **401** when
+    signed out, **403** when the role is not admin (#62). Other routes are still
+    open until later tickets tighten them.
 
     **Local use.** Start the Firestore emulator, run `npm run seed`, then
     `npm run dev`. Point clients at the same origin (for example
@@ -202,10 +203,11 @@ paths:
       summary: Review a reservation
       description: |
         Applies an admin decision (`approved`, `needs-changes`, or `rejected`),
-        updates `status`, and appends one history entry. Reject / request-changes
-        need at least 10 characters of feedback.
+        updates `status`, and appends one history entry. The history `actor` is
+        the signed-in admin's name. Reject / request-changes need at least 10
+        characters of feedback.
 
-        `403` will be returned for non-admins once auth lands (#62, #86).
+        Requires the `cea_session` cookie for an **admin** account (#62).
       operationId: reviewReservation
       requestBody:
         required: true
@@ -222,6 +224,8 @@ paths:
                 $ref: "#/components/schemas/Reservation"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -578,9 +582,7 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorMessage"
     Forbidden:
-      description: |
-        Reserved for authenticated role checks (#62). Not returned by the
-        current implementation except where noted.
+      description: Signed in, but the role is not allowed (non-admin on PATCH).
       content:
         application/json:
           schema:

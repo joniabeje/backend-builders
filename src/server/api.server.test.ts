@@ -7,6 +7,7 @@ import {
 } from "@/data/reservation-repository";
 import { ReviewFeedbackError } from "@/domain/review-decision";
 import { errorResponse, readNewReservation, readReviewInput } from "./api.server";
+import { ForbiddenError, UnauthorizedError } from "./auth.server";
 import { nextReservationId } from "./reservations.server";
 
 describe("readNewReservation", () => {
@@ -111,6 +112,8 @@ describe("errorResponse", () => {
       409,
     );
     assert.equal(errorResponse(new ReservationNotFoundError("REQ-9")).status, 404);
+    assert.equal(errorResponse(new UnauthorizedError()).status, 401);
+    assert.equal(errorResponse(new ForbiddenError()).status, 403);
   });
 });
 

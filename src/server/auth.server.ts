@@ -1,4 +1,4 @@
-// Email/password sign-in and sessions (#60). Protected route checks land in #62.
+// Email/password sign-in and sessions (#60). Admin checks for mutations (#62).
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { isRole, type PublicUser, type Role } from "@/domain/auth";
@@ -21,6 +21,14 @@ export class UnauthorizedError extends Error {
   constructor(message = "Sign in required.") {
     super(message);
     this.name = "UnauthorizedError";
+  }
+}
+
+/** Signed in, but the role cannot perform this action. Maps to HTTP 403 (#62). */
+export class ForbiddenError extends Error {
+  constructor(message = "You do not have permission to do that.") {
+    super(message);
+    this.name = "ForbiddenError";
   }
 }
 
@@ -114,7 +122,7 @@ export class AuthApi {
 
   /**
    * Loads a valid session and its user. Expired sessions are deleted and treated as
-   * signed out. Used by /api/auth/me and later by protected mutations (#62).
+   * signed out. Used by /api/auth/me and protected mutations (#62).
    */
   async requireSession(
     sessionId: string | null,
@@ -152,6 +160,17 @@ export class AuthApi {
       },
       user: toPublicUser(userSnap.id, userData),
     };
+  }
+
+  /** Like requireSession, but only the admin role may continue (#62). */
+  async requireAdmin(
+    sessionId: string | null,
+  ): Promise<{ session: AuthSession; user: PublicUser }> {
+    const current = await this.requireSession(sessionId);
+    if (current.user.role !== "admin") {
+      throw new ForbiddenError("Admin role required to review reservations.");
+    }
+    return current;
   }
 }
 
