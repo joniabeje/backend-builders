@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { MOCK_REQUESTS } from "../lib/mock-requests.ts";
 import {

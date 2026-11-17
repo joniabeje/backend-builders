@@ -27,7 +27,9 @@ export function SiteNav() {
               key={l.to}
               to={l.to}
               className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:text-foreground hover:bg-secondary"
-              activeProps={{ className: "rounded-md px-3 py-2 text-sm font-semibold text-primary bg-secondary" }}
+              activeProps={{
+                className: "rounded-md px-3 py-2 text-sm font-semibold text-primary bg-secondary",
+              }}
               activeOptions={{ exact: l.to === "/" }}
             >
               {l.label}

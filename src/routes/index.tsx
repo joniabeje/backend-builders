@@ -3,7 +3,14 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import heroImg from "@/assets/hero.jpg";
 import {
-  CalendarCheck2, ShieldCheck, Sparkles, Gauge, Building2, Users2, ArrowRight, CheckCircle2,
+  CalendarCheck2,
+  ShieldCheck,
+  Sparkles,
+  Gauge,
+  Building2,
+  Users2,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -33,7 +40,9 @@ function Index() {
               </div>
               <h1 className="mt-6 text-4xl font-bold leading-tight text-primary-foreground md:text-6xl">
                 Smart event space reservations,{" "}
-                <span className="bg-gradient-gold bg-clip-text text-transparent">made effortless.</span>
+                <span className="bg-gradient-gold bg-clip-text text-transparent">
+                  made effortless.
+                </span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg text-primary-foreground/80">
                 CEA Reserve transforms manual event approvals into an intelligent decision-support
@@ -62,7 +71,9 @@ function Index() {
                 ].map((s) => (
                   <div key={s.v}>
                     <div className="text-3xl font-bold text-gold">{s.k}</div>
-                    <div className="text-xs uppercase tracking-wider text-primary-foreground/60">{s.v}</div>
+                    <div className="text-xs uppercase tracking-wider text-primary-foreground/60">
+                      {s.v}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -83,14 +94,41 @@ function Index() {
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              { icon: CalendarCheck2, title: "Real-time Validation", body: "Catch missing fields, capacity mismatches, and policy violations before submission." },
-              { icon: Building2, title: "Smart Room Matching", body: "Get recommended rooms based on attendance, AV needs, and availability." },
-              { icon: ShieldCheck, title: "Risk Indicators", body: "After-hours, external guests, and large attendance are automatically flagged for admin review." },
-              { icon: Gauge, title: "Centralized Dashboard", body: "All requests in one view — approve, reject, or send back for changes." },
-              { icon: Users2, title: "Service Coordination", body: "Notify IT, custodial, and security automatically when their support is required." },
-              { icon: Sparkles, title: "Usage Analytics", body: "Track room usage, peak demand, and resource patterns to plan ahead." },
+              {
+                icon: CalendarCheck2,
+                title: "Real-time Validation",
+                body: "Catch missing fields, capacity mismatches, and policy violations before submission.",
+              },
+              {
+                icon: Building2,
+                title: "Smart Room Matching",
+                body: "Get recommended rooms based on attendance, AV needs, and availability.",
+              },
+              {
+                icon: ShieldCheck,
+                title: "Risk Indicators",
+                body: "After-hours, external guests, and large attendance are automatically flagged for admin review.",
+              },
+              {
+                icon: Gauge,
+                title: "Centralized Dashboard",
+                body: "All requests in one view — approve, reject, or send back for changes.",
+              },
+              {
+                icon: Users2,
+                title: "Service Coordination",
+                body: "Notify IT, custodial, and security automatically when their support is required.",
+              },
+              {
+                icon: Sparkles,
+                title: "Usage Analytics",
+                body: "Track room usage, peak demand, and resource patterns to plan ahead.",
+              },
             ].map((f) => (
-              <div key={f.title} className="group rounded-xl border border-border bg-card p-6 shadow-card transition-smooth hover:-translate-y-1 hover:shadow-elegant">
+              <div
+                key={f.title}
+                className="group rounded-xl border border-border bg-card p-6 shadow-card transition-smooth hover:-translate-y-1 hover:shadow-elegant"
+              >
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-primary text-primary-foreground shadow-elegant">
                   <f.icon className="h-5 w-5" />
                 </div>
@@ -104,7 +142,9 @@ function Index() {
         {/* How it works */}
         <section className="bg-secondary/40 border-y border-border">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
-            <h2 className="text-3xl font-bold text-foreground md:text-4xl">From request to approval</h2>
+            <h2 className="text-3xl font-bold text-foreground md:text-4xl">
+              From request to approval
+            </h2>
             <div className="mt-12 grid gap-8 md:grid-cols-4">
               {[
                 "Submit event details with live validation",
@@ -133,10 +173,16 @@ function Index() {
                   Ready to reserve your space?
                 </h2>
                 <p className="mt-3 text-primary-foreground/80 max-w-xl">
-                  Submit your CEA event reservation in minutes. Get instant feedback and track approval status end-to-end.
+                  Submit your CEA event reservation in minutes. Get instant feedback and track
+                  approval status end-to-end.
                 </p>
                 <ul className="mt-5 grid gap-2 text-sm text-primary-foreground/90 sm:grid-cols-2 max-w-lg">
-                  {["Real-time conflict detection", "Capacity-based suggestions", "Multi-service coordination", "Status notifications"].map((p) => (
+                  {[
+                    "Real-time conflict detection",
+                    "Capacity-based suggestions",
+                    "Multi-service coordination",
+                    "Status notifications",
+                  ].map((p) => (
                     <li key={p} className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-gold" /> {p}
                     </li>
