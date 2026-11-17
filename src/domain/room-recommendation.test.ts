@@ -2,6 +2,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import type { BookedSlot } from "./room-availability.ts";
 import {
+  describePreferredRoomProblem,
   recommendRooms,
   type RecommendableRoom,
   type RecommendationRequest,
@@ -150,5 +151,44 @@ describe("recommendRooms preferred room", () => {
 
   it("ignores an unknown preferred room id", () => {
     assert.equal(recommendRooms(request({ preferredRoomId: "nope" }), ROOMS, []).preferred, null);
+  });
+});
+
+describe("describePreferredRoomProblem", () => {
+  const problemFor = (req: RecommendationRequest, reservations: BookedSlot[] = []) => {
+    const { preferred } = recommendRooms(req, ROOMS, reservations);
+    assert.ok(preferred);
+    return describePreferredRoomProblem(req.attendance, preferred);
+  };
+
+  it("explains a booked room with the conflicting times and ids", () => {
+    assert.equal(
+      problemFor(request({ preferredRoomId: "seminar" }), [booked("seminar")]),
+      "Seminar Room is booked at 14:00–16:00 (REQ-seminar).",
+    );
+  });
+
+  it("explains a room that is too small", () => {
+    assert.equal(
+      problemFor(request({ attendance: 40, preferredRoomId: "seminar" })),
+      "Seminar Room holds 25, fewer than 40 attendees.",
+    );
+  });
+
+  it("lists missing features", () => {
+    assert.equal(
+      problemFor(request({ preferredRoomId: "seminar", requiredFeatures: ["Projector", "Stage"] })),
+      "Seminar Room does not have Projector, Stage.",
+    );
+  });
+
+  it("joins every reason in one sentence", () => {
+    assert.equal(
+      problemFor(
+        request({ attendance: 40, preferredRoomId: "seminar", requiredFeatures: ["Projector"] }),
+        [booked("seminar")],
+      ),
+      "Seminar Room is booked at 14:00–16:00 (REQ-seminar) and holds 25, fewer than 40 attendees and does not have Projector.",
+    );
   });
 });

@@ -1,23 +1,10 @@
 import { AlertTriangle, Sparkles } from "lucide-react";
-import { describeConflicts, type BookedSlot } from "@/domain/room-availability";
-import type {
-  PreferredRoomProblem,
-  RoomRecommendationResult,
-  UnsuitableReason,
+import type { BookedSlot } from "@/domain/room-availability";
+import {
+  describePreferredRoomProblem,
+  type RoomRecommendationResult,
 } from "@/domain/room-recommendation";
 import type { Room } from "@/lib/rooms";
-
-function describeProblem(
-  attendance: number,
-  { room, reasons, conflicts, missingFeatures }: PreferredRoomProblem<Room, BookedSlot>,
-): string {
-  const parts: Record<UnsuitableReason, string> = {
-    booked: `is booked at ${describeConflicts(conflicts)}`,
-    "too-small": `holds ${room.capacity}, fewer than ${attendance} attendees`,
-    "missing-features": `does not have ${missingFeatures.join(", ")}`,
-  };
-  return `${room.name} ${reasons.map((reason) => parts[reason]).join(" and ")}.`;
-}
 
 export function RoomRecommendations({
   attendance,
@@ -45,7 +32,7 @@ export function RoomRecommendations({
         >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <span>
-            {describeProblem(attendance, preferred)}{" "}
+            {describePreferredRoomProblem(attendance, preferred)}{" "}
             {rooms.length > 0 ? "Try one of these instead." : ""}
           </span>
         </div>
