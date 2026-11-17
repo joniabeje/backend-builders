@@ -6,21 +6,13 @@ import {
   type ReservationFormAction,
 } from "@/domain/reservation-form";
 import { validateReservation, type ReservationForm } from "@/domain/reservation-validation";
-import { getRoomAvailability, isCompleteSlot } from "@/domain/room-availability";
+import { checkSlotAvailability, type ReservationsLoadState } from "@/domain/room-availability";
 import { recommendRooms } from "@/domain/room-recommendation";
 import type { EventRequest } from "@/domain/reservation";
 import { useCreateReservation, useReservations } from "@/hooks/use-reservations";
 import { ROOMS } from "@/lib/rooms";
 
-const ROOM_IDS = ROOMS.map((room) => room.id);
 const NO_RESERVATIONS: readonly EventRequest[] = [];
-
-/**
- * "unchecked": no complete date and time yet, so every room is listed.
- * "loading" / "error": existing reservations are not available, so submit is blocked.
- * "checked": rooms are filtered to those free for the selected slot.
- */
-export type AvailabilityStatus = "unchecked" | "loading" | "error" | "checked";
 
 /** Form state, live validation, room availability, and recommendations for the /reserve page. */
 export function useReservationForm() {
@@ -36,23 +28,12 @@ export function useReservationForm() {
   const validation = validateReservation(form, ROOMS, reservations);
 
   const { date, startTime, endTime } = form;
-  const slotComplete = isCompleteSlot({ date, startTime, endTime });
-  const availability = useMemo(
-    () => getRoomAvailability(ROOM_IDS, { date, startTime, endTime }, reservations),
-    [date, startTime, endTime, reservations],
-  );
-
-  let availabilityStatus: AvailabilityStatus = "checked";
-  if (!slotComplete) availabilityStatus = "unchecked";
-  else if (reservationsQuery.isError) availabilityStatus = "error";
-  else if (!reservationsLoaded) availabilityStatus = "loading";
-
-  const availableRooms = useMemo(
-    () =>
-      availabilityStatus === "checked"
-        ? ROOMS.filter((room) => availability.get(room.id)?.available)
-        : ROOMS,
-    [availabilityStatus, availability],
+  let loadState: ReservationsLoadState = "loading";
+  if (reservationsQuery.isError) loadState = "error";
+  else if (reservationsLoaded) loadState = "loaded";
+  const { status: availabilityStatus, availableRooms } = useMemo(
+    () => checkSlotAvailability(ROOMS, { date, startTime, endTime }, reservations, loadState),
+    [date, startTime, endTime, reservations, loadState],
   );
 
   // Until reservations load, recommend on capacity and features only; the UI says

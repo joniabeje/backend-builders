@@ -44,6 +44,7 @@ export type ReservationFormAction =
   | {
       [K in keyof ReservationForm]: { type: "update"; field: K; value: ReservationForm[K] };
     }[keyof ReservationForm]
+  | { type: "toggleFeature"; feature: string }
   | { type: "submitted"; id: string }
   | { type: "reset" };
 

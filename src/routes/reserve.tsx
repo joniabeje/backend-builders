@@ -12,7 +12,8 @@ import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
 import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
 import { ValidationPanel } from "@/components/reserve/ValidationPanel";
 import type { IssueCode } from "@/domain/reservation-validation";
-import { useReservationForm, type AvailabilityStatus } from "@/hooks/use-reservation-form";
+import type { AvailabilityStatus } from "@/domain/room-availability";
+import { useReservationForm } from "@/hooks/use-reservation-form";
 import { ROOMS, ROOM_FEATURES } from "@/lib/rooms";
 import { CalendarCheck2 } from "lucide-react";
 
