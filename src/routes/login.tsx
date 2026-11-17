@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthClientError, signIn } from "@/data/auth-client";
 import { ROLE_LABELS } from "@/domain/auth";
+import { currentUserQueryKey } from "@/hooks/use-current-user";
 
 type LoginSearch = {
   redirect?: string;
@@ -36,6 +38,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { redirect: redirectTo, error: searchError } = Route.useSearch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("admin@cea.howard.edu");
   const [password, setPassword] = useState("admin-demo");
   const [pending, setPending] = useState(false);
@@ -51,6 +54,7 @@ function LoginPage() {
     setError(null);
     try {
       const user = await signIn(email.trim(), password);
+      queryClient.setQueryData(currentUserQueryKey, user);
       const destination =
         redirectTo && redirectTo !== "/login"
           ? redirectTo

@@ -1,14 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarCheck2 } from "lucide-react";
-
-const links = [
-  { to: "/", label: "Home" },
-  { to: "/rooms", label: "Rooms" },
-  { to: "/dashboard", label: "My Requests" },
-  { to: "/admin", label: "Admin" },
-] as const;
+import { siteNavLinks } from "@/domain/site-nav";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function SiteNav() {
+  const { data: user = null } = useCurrentUser();
+  const links = siteNavLinks(user);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
