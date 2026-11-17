@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
+  isValidEmail,
   parseAttendance,
   parseTimeOfDay,
   validateReservation,
@@ -19,6 +20,8 @@ const VALID_FORM: ReservationForm = {
   title: "NSBE General Body Meeting",
   organization: "NSBE — Howard Chapter",
   advisor: "Dr. Williams",
+  advisorEmail: "williams@howard.edu",
+  advisorApproved: true,
   date: "2026-11-04",
   startTime: "12:00",
   endTime: "13:00",
@@ -35,6 +38,8 @@ const EMPTY_FORM: ReservationForm = {
   title: "",
   organization: "",
   advisor: "",
+  advisorEmail: "",
+  advisorApproved: false,
   date: "",
   startTime: "",
   endTime: "",
@@ -215,6 +220,91 @@ describe("validateReservation", () => {
       ["food-service"],
     );
     assert.equal(partial.risk.score, 1);
+  });
+});
+
+describe("validateReservation advisor email", () => {
+  it("requires the advisor email before the form can be submitted", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "" }, ROOMS);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.requiredFieldsFilled, false);
+    assert.equal(result.canSubmit, false);
+  });
+
+  it("blocks a malformed advisor email with a readable message", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "williams" }, ROOMS);
+    assert.deepEqual(result.issues, [
+      {
+        code: "advisor-email-invalid",
+        severity: "error",
+        message: "Enter the advisor's email address, like name@howard.edu.",
+      },
+    ]);
+    assert.equal(result.canSubmit, false);
+  });
+
+  it("treats a whitespace-only advisor email as missing, not malformed", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "   " }, ROOMS);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.requiredFieldsFilled, false);
+  });
+});
+
+describe("isValidEmail", () => {
+  it("accepts ordinary addresses, subdomains, capitals and surrounding spaces", () => {
+    for (const email of [
+      "williams@howard.edu",
+      "first.last@bison.howard.edu",
+      "J.Okafor@Howard.EDU",
+      "advisor+events@gmail.com",
+      " williams@howard.edu ",
+    ]) {
+      assert.equal(isValidEmail(email), true, email);
+    }
+  });
+
+  it("rejects addresses missing a part or containing spaces or a second @", () => {
+    for (const email of [
+      "williams",
+      "williams@",
+      "@howard.edu",
+      "williams@howard",
+      "williams@@howard.edu",
+      "will iams@howard.edu",
+      "williams@howard .edu",
+    ]) {
+      assert.equal(isValidEmail(email), false, email);
+    }
+  });
+});
+
+describe("validateReservation advisor approval", () => {
+  it("blocks a complete form until advisor approval is confirmed", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorApproved: false }, ROOMS);
+    assert.deepEqual(result.issues, [
+      {
+        code: "advisor-approval-missing",
+        severity: "error",
+        message: "Confirm that your faculty advisor has approved this event.",
+      },
+    ]);
+    assert.equal(result.requiredFieldsFilled, true);
+    assert.equal(result.canSubmit, false);
+  });
+
+  it("waits for the rest of the form before asking for approval", () => {
+    assert.deepEqual(codesFor({ advisorApproved: false, purpose: "" }), []);
+  });
+
+  it("reports missing approval alongside other errors", () => {
+    assert.deepEqual(codesFor({ advisorApproved: false, attendance: "30" }), [
+      "room-capacity",
+      "advisor-approval-missing",
+    ]);
+  });
+
+  it("allows submission once approval is confirmed", () => {
+    assert.equal(validateReservation(VALID_FORM, ROOMS).canSubmit, true);
   });
 });
 

@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { FormField, FormSection, ToggleField, inputClassName } from "@/components/form-controls";
+import {
+  CheckboxField,
+  FormField,
+  FormSection,
+  ToggleField,
+  inputClassName,
+} from "@/components/form-controls";
 import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
 import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
 import { ValidationPanel } from "@/components/reserve/ValidationPanel";
+import type { IssueCode } from "@/domain/reservation-validation";
 import { useReservationForm, type AvailabilityStatus } from "@/hooks/use-reservation-form";
 import { ROOMS, ROOM_FEATURES } from "@/lib/rooms";
 import { CalendarCheck2 } from "lucide-react";
@@ -68,6 +75,7 @@ function ReservePage() {
     reset,
   } = useReservationForm();
   const { attendance, issues, requiredFieldsFilled, canSubmit } = validation;
+  const issueMessage = (code: IssueCode) => issues.find((issue) => issue.code === code)?.message;
   // Keep a selected room that just became unavailable visible, so the select does not
   // silently show "Select a room…" while the conflict error explains what happened.
   const selectedRoomUnavailable =
@@ -140,6 +148,15 @@ function ReservePage() {
                     placeholder="Dr. Last Name"
                   />
                 </FormField>
+                <FormField label="Advisor Email *" error={issueMessage("advisor-email-invalid")}>
+                  <input
+                    type="email"
+                    className={inputClassName}
+                    value={form.advisorEmail}
+                    onChange={(e) => update("advisorEmail", e.target.value)}
+                    placeholder="name@howard.edu"
+                  />
+                </FormField>
                 <FormField label="Expected Attendance *">
                   <input
                     type="number"
@@ -159,6 +176,13 @@ function ReservePage() {
                     placeholder="Brief description of the event..."
                   />
                 </FormField>
+                <CheckboxField
+                  full
+                  label="My faculty advisor has approved this event *"
+                  checked={form.advisorApproved}
+                  onChange={(v) => update("advisorApproved", v)}
+                  error={issueMessage("advisor-approval-missing")}
+                />
               </div>
             </FormSection>
 
