@@ -16,6 +16,9 @@ dist-ssr
 .nitro
 *.local
 
+# Firebase CLI cache (debug logs are covered by *.log)
+.firebase/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
