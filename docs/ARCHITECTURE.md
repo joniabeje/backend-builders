@@ -64,7 +64,7 @@ flowchart LR
 
 ## Local development
 
-- Java 17 or newer is required for the Firebase Emulator.
+- Java 21 or newer is required for the Firebase Emulator (`winget install Microsoft.OpenJDK.21` on Windows).
 - `npm run emulators` starts Firestore locally under the placeholder project `demo-cea-reserve`. `demo-` projects never reach Google's servers and need no credentials.
 - `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
 - The real Firebase project id is only needed for deployment.
