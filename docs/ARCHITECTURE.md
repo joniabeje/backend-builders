@@ -66,6 +66,7 @@ flowchart LR
 
 - Java 21 or newer is required for the Firebase Emulator (`winget install Microsoft.OpenJDK.21` on Windows).
 - `npm run emulators` starts Firestore locally under the placeholder project `demo-cea-reserve`. `demo-` projects never reach Google's servers and need no credentials.
+- With the emulator running, `npm run seed` loads the room catalog and the demo reservations with their history. It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo data and needs `--rooms-only`.
 - `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
 - The real Firebase project id is only needed for deployment.
 
