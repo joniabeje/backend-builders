@@ -70,7 +70,7 @@ flowchart LR
 - With the emulator running, `npm run seed` loads the room catalog, demo reservations, and one account per role (#60). It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo reservations and needs `--rooms-only` (still seeds rooms and accounts).
 - Demo passwords (emulator / local only): `student@cea.howard.edu` / `student-demo`, `advisor@cea.howard.edu` / `advisor-demo`, `admin@cea.howard.edu` / `admin-demo`, `facilities@cea.howard.edu` / `facilities-demo`. Sign in at `/login` or `POST /api/auth/sign-in`; the session cookie is `cea_session`. `/admin` redirects signed-out users to `/login` and refuses non-admin roles (#61). `PATCH /api/reservations/:id` also requires an admin session on the server (**401** / **403**, #62).
 - For a local UI against Firestore: start `npm run emulators`, run `npm run seed`, then `npm run dev` (no `VITE_USE_MOCKS`). Submit on `/reserve` and refresh `/dashboard` — the request stays.
-- `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
+- `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it. That suite includes the auth security smoke (#63): PATCH signed out → 401, as a student → 403.
 - The real Firebase project id is only needed for deployment.
 
 ## Data model
