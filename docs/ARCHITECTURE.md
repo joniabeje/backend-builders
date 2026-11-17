@@ -13,7 +13,7 @@ flowchart LR
 ```
 
 - Pages read and write through the `ReservationRepository` interface (`src/data/`). The default is `ApiReservationRepository` against `/api` (#57). Set `VITE_USE_MOCKS=true` for the in-memory seed (Playwright, Lovable preview).
-- HTTP endpoints live under `/api` (`GET/POST /api/reservations`, `GET/PATCH /api/reservations/:id`, `GET /api/rooms`) and call `ReservationsApi` in `src/server/reservations.server.ts` (#55). Create runs `validateReservation` (400), `findConflicts` (409) and stores server-computed risk.
+- HTTP endpoints live under `/api` (`GET/POST /api/reservations`, `GET/PATCH /api/reservations/:id`, `GET /api/rooms`) and call `ReservationsApi` in `src/server/reservations.server.ts` (#55). Create runs `validateReservation` (400), `findConflicts` (409) and stores server-computed risk. The OpenAPI contract is `docs/openapi.yaml` (#56).
 - Every business rule lives once in `src/domain/` and runs in both places: in the browser for live feedback, and on the server as the check that counts.
 - The browser never talks to Firestore directly. Only the server does, with the Admin SDK.
 

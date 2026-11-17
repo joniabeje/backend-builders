@@ -12,7 +12,7 @@ export default defineConfig({
     environment: "node",
     // E2E specs live in e2e/ and run under Playwright, not here. Integration tests need
     // the Firestore emulator and run with vitest.integration.config.ts.
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "docs/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts"],
     coverage: {
       provider: "v8",
