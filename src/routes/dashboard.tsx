@@ -13,6 +13,7 @@ import {
   type EventRequest,
   type RequestStatus,
 } from "@/domain/reservation";
+import { countByStatus } from "@/domain/reservation-summary";
 import { latestFeedback } from "@/domain/review-decision";
 import { useReservations } from "@/hooks/use-reservations";
 import { getRoomDisplayName } from "@/lib/rooms";
@@ -34,17 +35,6 @@ export const Route = createFileRoute("/dashboard")({
 /** Requester-facing wording; the admin view uses the shorter "Pending". */
 function requesterLabel(status: RequestStatus): string {
   return status === "pending" ? "Pending Review" : REQUEST_STATUS_LABELS[status];
-}
-
-function countByStatus(requests: readonly EventRequest[]): Record<RequestStatus, number> {
-  const counts: Record<RequestStatus, number> = {
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-    "needs-changes": 0,
-  };
-  for (const request of requests) counts[request.status] += 1;
-  return counts;
 }
 
 /** Feedback is only actionable while the requester still has something to fix. */
