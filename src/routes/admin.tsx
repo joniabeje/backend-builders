@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Fragment, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { ReviewDecisionDialog } from "@/components/admin/ReviewDecisionDialog";
+import { fetchCurrentUser } from "@/data/fetch-current-user";
+import { adminAccess } from "@/domain/admin-access";
 import { REQUEST_STATUS_LABELS } from "@/domain/reservation";
 import {
   STATUS_FILTERS,
@@ -29,6 +31,17 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: async () => {
+    const user = await fetchCurrentUser();
+    const access = adminAccess(user);
+    if (access === "login") {
+      throw redirect({ to: "/login", search: { redirect: "/admin" } });
+    }
+    if (access === "forbidden") {
+      throw redirect({ to: "/login", search: { error: "forbidden" } });
+    }
+    return { user };
+  },
   head: () => ({
     meta: [
       { title: "Admin Dashboard — CEA Reserve" },
