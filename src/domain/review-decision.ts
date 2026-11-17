@@ -74,3 +74,14 @@ export function latestFeedback(history: readonly StatusChange[]): StatusChange |
   }
   return undefined;
 }
+
+/**
+ * The feedback a requester still has to act on: the latest reviewer note while the
+ * request is rejected or sent back for changes. Once approved, old notes are history.
+ */
+export function actionableFeedback(
+  request: Pick<EventRequest, "status" | "history">,
+): StatusChange | undefined {
+  if (request.status !== "rejected" && request.status !== "needs-changes") return undefined;
+  return latestFeedback(request.history);
+}

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import type { EventRequest } from "./reservation.ts";
 import { computeRisk } from "./risk.ts";
 import {
+  actionableFeedback,
   applyReviewDecision,
   isDecisionFeedbackValid,
   isReviewDecision,
@@ -156,5 +157,36 @@ describe("latestFeedback", () => {
     );
     assert.equal(latestFeedback(reviewed.history)?.at, T1);
     assert.equal(latestFeedback([]), undefined);
+  });
+});
+
+describe("actionableFeedback", () => {
+  const FEEDBACK = "Please reduce attendance.";
+
+  it("shows the reviewer's note while the request is sent back or rejected", () => {
+    for (const decision of ["needs-changes", "rejected"] as const) {
+      const reviewed = applyReviewDecision(request(), { decision, feedback: FEEDBACK }, ACTOR, T1);
+      assert.equal(actionableFeedback(reviewed)?.feedback, FEEDBACK, decision);
+    }
+  });
+
+  it("hides old notes once the request is approved", () => {
+    const sentBack = applyReviewDecision(
+      request(),
+      { decision: "needs-changes", feedback: FEEDBACK },
+      ACTOR,
+      T1,
+    );
+    const approved = applyReviewDecision(
+      sentBack,
+      { decision: "approved", feedback: "" },
+      ACTOR,
+      T2,
+    );
+    assert.equal(actionableFeedback(approved), undefined);
+  });
+
+  it("returns nothing for a pending request with no history", () => {
+    assert.equal(actionableFeedback(request()), undefined);
   });
 });
