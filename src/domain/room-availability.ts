@@ -108,6 +108,41 @@ export function getRoomAvailability<T extends BookedSlot>(
 }
 
 /**
+ * "unchecked": no complete date and time yet, so every room is listed.
+ * "loading" / "error": existing reservations are not available, so nothing can be ruled out.
+ * "checked": rooms are filtered to those free for the selected slot.
+ */
+export type AvailabilityStatus = "unchecked" | "loading" | "error" | "checked";
+
+/** Where the list of existing reservations is in loading. */
+export type ReservationsLoadState = "loading" | "error" | "loaded";
+
+/**
+ * Which rooms the requester can choose for a slot. Until the slot is complete and the
+ * existing reservations have loaded, every room is offered and the status says why.
+ */
+export function checkSlotAvailability<R extends { id: string }, T extends BookedSlot>(
+  rooms: readonly R[],
+  slot: Omit<RequestedSlot, "roomId">,
+  reservations: readonly T[],
+  loadState: ReservationsLoadState,
+): { status: AvailabilityStatus; availableRooms: R[] } {
+  if (!isCompleteSlot(slot)) return { status: "unchecked", availableRooms: [...rooms] };
+  if (loadState === "error") return { status: "error", availableRooms: [...rooms] };
+  if (loadState === "loading") return { status: "loading", availableRooms: [...rooms] };
+
+  const availability = getRoomAvailability(
+    rooms.map((room) => room.id),
+    slot,
+    reservations,
+  );
+  return {
+    status: "checked",
+    availableRooms: rooms.filter((room) => availability.get(room.id)?.available),
+  };
+}
+
+/**
  * The room-holding reservation in progress at `minutes` past midnight on `date`, if any.
  * Starts are inclusive and ends exclusive, matching timeRangesOverlap.
  */

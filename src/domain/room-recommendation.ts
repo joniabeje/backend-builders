@@ -3,7 +3,12 @@
 // Framework-free like room-availability.ts: callers pass the room catalog and the
 // existing reservations in. Filters run in the order the backlog specifies:
 // availability (#3), then required features, then ranking by capacity fit.
-import { findConflicts, isCompleteSlot, type BookedSlot } from "./room-availability";
+import {
+  describeConflicts,
+  findConflicts,
+  isCompleteSlot,
+  type BookedSlot,
+} from "./room-availability";
 
 /** The room fields recommendations need, so callers are not tied to the UI catalog shape. */
 export type RecommendableRoom = {
@@ -49,6 +54,27 @@ export const RECOMMENDATION_POLICY = {
   /** Attendance above this is treated as a typo, not a real event. */
   maxReasonableAttendance: 5000,
 } as const;
+
+/**
+ * Requester-facing explanation of why the selected room cannot host the event, e.g.
+ * "Seminar Room 201 is booked at 12:30–14:00 (REQ-1040) and holds 25, fewer than 40 attendees."
+ */
+export function describePreferredRoomProblem(
+  attendance: number,
+  {
+    room,
+    reasons,
+    conflicts,
+    missingFeatures,
+  }: PreferredRoomProblem<RecommendableRoom, BookedSlot>,
+): string {
+  const parts: Record<UnsuitableReason, string> = {
+    booked: `is booked at ${describeConflicts(conflicts)}`,
+    "too-small": `holds ${room.capacity}, fewer than ${attendance} attendees`,
+    "missing-features": `does not have ${missingFeatures.join(", ")}`,
+  };
+  return `${room.name} ${reasons.map((reason) => parts[reason]).join(" and ")}.`;
+}
 
 function isUsableAttendance(attendance: number): boolean {
   return (

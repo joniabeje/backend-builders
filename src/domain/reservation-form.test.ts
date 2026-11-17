@@ -61,6 +61,22 @@ describe("reservationFormReducer", () => {
     assert.equal(next.form.hasFood, true);
   });
 
+  it("adds a required feature that is not selected yet", () => {
+    const next = reduce(stateWith({ ...VALID_FORM, requiredFeatures: ["Projector"] }), {
+      type: "toggleFeature",
+      feature: "Whiteboard",
+    });
+    assert.deepEqual(next.form.requiredFeatures, ["Projector", "Whiteboard"]);
+  });
+
+  it("removes a required feature that is already selected", () => {
+    const next = reduce(stateWith({ ...VALID_FORM, requiredFeatures: ["Projector", "Stage"] }), {
+      type: "toggleFeature",
+      feature: "Projector",
+    });
+    assert.deepEqual(next.form.requiredFeatures, ["Stage"]);
+  });
+
   it("does not mutate the previous state", () => {
     const before = stateWith({ ...VALID_FORM });
     reduce(before, { type: "update", field: "title", value: "Changed" });

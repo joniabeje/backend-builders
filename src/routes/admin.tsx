@@ -5,7 +5,14 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { ReviewDecisionDialog } from "@/components/admin/ReviewDecisionDialog";
-import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/domain/reservation";
+import { REQUEST_STATUS_LABELS } from "@/domain/reservation";
+import {
+  STATUS_FILTERS,
+  countByStatus,
+  countRequiringReview,
+  filterByStatus,
+  type StatusFilter,
+} from "@/domain/reservation-summary";
 import type { ReviewDecision } from "@/domain/review-decision";
 import { useReservations, useReviewReservation } from "@/hooks/use-reservations";
 import { getRoomDisplayName } from "@/lib/rooms";
@@ -69,14 +76,15 @@ const DECISION_ACTIONS: {
 function AdminPage() {
   const { data: requests = [], isPending, isError, error } = useReservations();
   const review = useReviewReservation();
-  const [filter, setFilter] = useState<"all" | RequestStatus>("all");
+  const [filter, setFilter] = useState<StatusFilter>("all");
   const [pendingDecision, setPendingDecision] = useState<{
     id: string;
     decision: ReviewDecision;
   } | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
-  const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
+  const filtered = filterByStatus(requests, filter);
+  const counts = countByStatus(requests);
   const dialogRequest = requests.find((r) => r.id === pendingDecision?.id);
 
   function isUpdating(id: string): boolean {
@@ -101,19 +109,19 @@ function AdminPage() {
     { label: "Total Requests", value: requests.length, icon: Inbox, tone: "primary" },
     {
       label: "Pending Review",
-      value: requests.filter((r) => r.status === "pending").length,
+      value: counts.pending,
       icon: Activity,
       tone: "warning",
     },
     {
       label: "High Risk",
-      value: requests.filter((r) => r.risk.requiresReview).length,
+      value: countRequiringReview(requests),
       icon: AlertTriangle,
       tone: "destructive",
     },
     {
       label: "Approved",
-      value: requests.filter((r) => r.status === "approved").length,
+      value: counts.approved,
       icon: ShieldCheck,
       tone: "success",
     },
@@ -151,7 +159,7 @@ function AdminPage() {
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Filter className="h-3.5 w-3.5" /> Filter:
           </span>
-          {(["all", ...REQUEST_STATUSES] as const).map((f) => (
+          {STATUS_FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}

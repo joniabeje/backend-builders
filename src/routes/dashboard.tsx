@@ -7,13 +7,9 @@ import { STATUS_STYLES } from "@/components/status-styles";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  REQUEST_STATUSES,
-  REQUEST_STATUS_LABELS,
-  type EventRequest,
-  type RequestStatus,
-} from "@/domain/reservation";
-import { latestFeedback } from "@/domain/review-decision";
+import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/domain/reservation";
+import { countByStatus } from "@/domain/reservation-summary";
+import { actionableFeedback } from "@/domain/review-decision";
 import { useReservations } from "@/hooks/use-reservations";
 import { getRoomDisplayName } from "@/lib/rooms";
 import { Calendar, ChevronDown, Clock, MapPin, Users2 } from "lucide-react";
@@ -34,23 +30,6 @@ export const Route = createFileRoute("/dashboard")({
 /** Requester-facing wording; the admin view uses the shorter "Pending". */
 function requesterLabel(status: RequestStatus): string {
   return status === "pending" ? "Pending Review" : REQUEST_STATUS_LABELS[status];
-}
-
-function countByStatus(requests: readonly EventRequest[]): Record<RequestStatus, number> {
-  const counts: Record<RequestStatus, number> = {
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-    "needs-changes": 0,
-  };
-  for (const request of requests) counts[request.status] += 1;
-  return counts;
-}
-
-/** Feedback is only actionable while the requester still has something to fix. */
-function actionableFeedback(request: EventRequest) {
-  if (request.status !== "rejected" && request.status !== "needs-changes") return undefined;
-  return latestFeedback(request.history);
 }
 
 function DashboardPage() {

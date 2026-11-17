@@ -2,6 +2,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import type { RequestStatus } from "./reservation.ts";
 import {
+  checkSlotAvailability,
   findConflicts,
   findReservationInProgress,
   getRoomAvailability,
@@ -31,6 +32,45 @@ const slot = (overrides: Partial<RequestedSlot> = {}): RequestedSlot => ({
 
 const conflictIds = (requested: RequestedSlot, existing: BookedSlot[]) =>
   findConflicts(requested, existing).map((conflict) => conflict.id);
+
+describe("checkSlotAvailability", () => {
+  const ROOMS = [{ id: "innovation" }, { id: "seminar-201" }, { id: "atrium" }];
+  const SLOT = { date: "2026-05-02", startTime: "15:00", endTime: "17:00" };
+  const BOOKED = [booking()];
+  const roomIds = (rooms: { id: string }[]) => rooms.map((room) => room.id);
+
+  it("offers only the rooms free for a complete slot once bookings have loaded", () => {
+    const result = checkSlotAvailability(ROOMS, SLOT, BOOKED, "loaded");
+    assert.equal(result.status, "checked");
+    assert.deepEqual(roomIds(result.availableRooms), ["seminar-201", "atrium"]);
+  });
+
+  it("offers every room until the date and times are complete", () => {
+    const result = checkSlotAvailability(ROOMS, { ...SLOT, endTime: "" }, BOOKED, "loaded");
+    assert.equal(result.status, "unchecked");
+    assert.deepEqual(roomIds(result.availableRooms), roomIds(ROOMS));
+  });
+
+  it("treats an end before the start as incomplete", () => {
+    const result = checkSlotAvailability(ROOMS, { ...SLOT, endTime: "14:00" }, BOOKED, "loaded");
+    assert.equal(result.status, "unchecked");
+  });
+
+  it("cannot rule anything out while bookings are loading or failed to load", () => {
+    for (const loadState of ["loading", "error"] as const) {
+      const result = checkSlotAvailability(ROOMS, SLOT, BOOKED, loadState);
+      assert.equal(result.status, loadState);
+      assert.deepEqual(roomIds(result.availableRooms), roomIds(ROOMS), loadState);
+    }
+  });
+
+  it("reports an incomplete slot before a loading problem", () => {
+    assert.equal(
+      checkSlotAvailability(ROOMS, { ...SLOT, date: "" }, [], "error").status,
+      "unchecked",
+    );
+  });
+});
 
 describe("timeRangesOverlap", () => {
   it("treats touching boundaries as free", () => {

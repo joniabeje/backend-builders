@@ -44,6 +44,7 @@ export type ReservationFormAction =
   | {
       [K in keyof ReservationForm]: { type: "update"; field: K; value: ReservationForm[K] };
     }[keyof ReservationForm]
+  | { type: "toggleFeature"; feature: string }
   | { type: "submitted"; id: string }
   | { type: "reset" };
 
@@ -54,6 +55,13 @@ export function reservationFormReducer(
   switch (action.type) {
     case "update":
       return { ...state, form: { ...state.form, [action.field]: action.value } };
+    case "toggleFeature": {
+      const { requiredFeatures } = state.form;
+      const next = requiredFeatures.includes(action.feature)
+        ? requiredFeatures.filter((feature) => feature !== action.feature)
+        : [...requiredFeatures, action.feature];
+      return { ...state, form: { ...state.form, requiredFeatures: next } };
+    }
     case "submitted":
       return { ...state, submittedId: action.id };
     case "reset":
