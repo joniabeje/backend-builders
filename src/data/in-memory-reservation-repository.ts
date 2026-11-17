@@ -1,11 +1,18 @@
-import type { EventRequest, UnscoredEventRequest } from "@/domain/reservation";
+import type { EventRequest, NewReservation, UnscoredEventRequest } from "@/domain/reservation";
 import { withRisk } from "@/domain/risk";
 import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
-import { ReservationNotFoundError, type ReservationRepository } from "./reservation-repository";
+import { findConflicts } from "@/domain/room-availability";
+import {
+  ReservationConflictError,
+  ReservationNotFoundError,
+  type ReservationRepository,
+} from "./reservation-repository";
 
 export type InMemoryReservationRepositoryOptions = {
   /** Recorded as the actor on every review until real accounts exist (#14). */
   reviewer?: string;
+  /** Recorded as the requester on every new request until real accounts exist (#14). */
+  requester?: string;
   now?: () => Date;
 };
 
@@ -18,16 +25,19 @@ export type InMemoryReservationRepositoryOptions = {
 export class InMemoryReservationRepository implements ReservationRepository {
   private readonly reservations = new Map<string, EventRequest>();
   private readonly reviewer: string;
+  private readonly requester: string;
   private readonly now: () => Date;
 
   constructor(
     seed: readonly UnscoredEventRequest[],
     {
       reviewer = "Dean's Office",
+      requester = UNVERIFIED_REQUESTER,
       now = () => new Date(),
     }: InMemoryReservationRepositoryOptions = {},
   ) {
     this.reviewer = reviewer;
+    this.requester = requester;
     this.now = now;
     for (const reservation of seed) {
       if (this.reservations.has(reservation.id)) {
@@ -41,6 +51,28 @@ export class InMemoryReservationRepository implements ReservationRepository {
     return Array.from(this.reservations.values(), copy);
   }
 
+  async create(input: NewReservation): Promise<EventRequest> {
+    const slot = {
+      roomId: input.room,
+      date: input.date,
+      startTime: input.startTime,
+      endTime: input.endTime,
+    };
+    const conflicts = findConflicts(slot, Array.from(this.reservations.values()));
+    if (conflicts.length > 0) throw new ReservationConflictError(conflicts);
+
+    const reservation = withRisk({
+      ...input,
+      id: this.nextId(),
+      requester: this.requester,
+      status: "pending" as const,
+      submittedAt: this.now().toISOString().slice(0, 10),
+      history: [],
+    });
+    this.reservations.set(reservation.id, reservation);
+    return copy(reservation);
+  }
+
   async review(id: string, input: ReviewInput): Promise<EventRequest> {
     if (!isReviewDecision(input.decision)) {
       throw new TypeError(`Invalid review decision: ${String(input.decision)}`);
@@ -52,7 +84,22 @@ export class InMemoryReservationRepository implements ReservationRepository {
     this.reservations.set(id, updated);
     return copy(updated);
   }
+
+  /** "REQ-<n>", one above the highest numbered id stored so far. */
+  private nextId(): string {
+    let highest = 1000;
+    for (const id of this.reservations.keys()) {
+      const match = ID_PATTERN.exec(id);
+      if (match) highest = Math.max(highest, Number(match[1]));
+    }
+    return `REQ-${highest + 1}`;
+  }
 }
+
+/** Shown as the requester until sign-in exists (#14). */
+export const UNVERIFIED_REQUESTER = "Unverified requester";
+
+const ID_PATTERN = /^REQ-(\d+)$/;
 
 function copy(reservation: EventRequest): EventRequest {
   return {

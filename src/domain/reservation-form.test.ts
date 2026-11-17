@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import {
   EMPTY_RESERVATION_FORM,
   INITIAL_RESERVATION_FORM_STATE,
-  createReservationFormReducer,
+  prepareSubmission,
+  reservationFormReducer as reduce,
   type ReservationFormState,
 } from "./reservation-form";
 import type { ReservationForm, RoomCapacity } from "./reservation-validation";
+import type { BookedSlot } from "./room-availability";
 
 const ROOMS: RoomCapacity[] = [{ id: "seminar-201", name: "Seminar Room 201", capacity: 25 }];
 
@@ -26,17 +28,15 @@ const VALID_FORM: ReservationForm = {
   requiredFeatures: [],
 };
 
-const reduce = createReservationFormReducer(ROOMS);
-
-function stateWith(form: ReservationForm, submitted = false): ReservationFormState {
-  return { form, submitted };
+function stateWith(form: ReservationForm, submittedId: string | null = null): ReservationFormState {
+  return { form, submittedId };
 }
 
 describe("reservationFormReducer", () => {
   it("starts with an empty, unsubmitted form", () => {
     assert.deepEqual(INITIAL_RESERVATION_FORM_STATE, {
       form: EMPTY_RESERVATION_FORM,
-      submitted: false,
+      submittedId: null,
     });
   });
 
@@ -65,44 +65,91 @@ describe("reservationFormReducer", () => {
     assert.equal(before.form.title, VALID_FORM.title);
   });
 
-  it("submits a valid form", () => {
-    const next = reduce(stateWith(VALID_FORM), { type: "submit" });
-    assert.equal(next.submitted, true);
+  it("records the saved request id and keeps the form for the confirmation", () => {
+    const next = reduce(stateWith(VALID_FORM), { type: "submitted", id: "REQ-1043" });
+    assert.equal(next.submittedId, "REQ-1043");
     assert.deepEqual(next.form, VALID_FORM);
   });
 
-  it("ignores submit when a required field is missing", () => {
-    const state = stateWith({ ...VALID_FORM, advisor: "" });
-    assert.equal(reduce(state, { type: "submit" }), state);
-  });
-
-  it("ignores submit when validation has an error", () => {
-    const state = stateWith({ ...VALID_FORM, attendance: "40" });
-    assert.equal(reduce(state, { type: "submit" }), state);
-  });
-
-  it("submits despite warnings", () => {
-    const next = reduce(stateWith({ ...VALID_FORM, hasFood: true }), { type: "submit" });
-    assert.equal(next.submitted, true);
-  });
-
   it("resets to an empty form after submission", () => {
-    const next = reduce(stateWith(VALID_FORM, true), { type: "reset" });
+    const next = reduce(stateWith(VALID_FORM, "REQ-1043"), { type: "reset" });
     assert.deepEqual(next, INITIAL_RESERVATION_FORM_STATE);
   });
+});
 
-  it("ignores submit when the room is already booked for that time", () => {
-    const booked = [
+describe("prepareSubmission", () => {
+  it("maps a valid form to the request payload", () => {
+    assert.deepEqual(prepareSubmission(VALID_FORM, ROOMS), {
+      title: "NSBE General Body Meeting",
+      organization: "NSBE — Howard Chapter",
+      advisor: "Dr. Williams",
+      purpose: "Monthly chapter meeting",
+      date: "2026-11-04",
+      startTime: "12:00",
+      endTime: "13:00",
+      attendance: 20,
+      room: "seminar-201",
+      hasFood: false,
+      externalGuests: false,
+      itNeeds: false,
+    });
+  });
+
+  it("trims text, parses attendance, and carries the service toggles", () => {
+    const payload = prepareSubmission(
+      {
+        ...VALID_FORM,
+        title: "  Robotics Workshop ",
+        advisor: " Dr. Harris",
+        attendance: " 24 ",
+        hasFood: true,
+        externalGuests: true,
+        itNeeds: true,
+      },
+      ROOMS,
+    );
+    assert.ok(payload);
+    assert.equal(payload.title, "Robotics Workshop");
+    assert.equal(payload.advisor, "Dr. Harris");
+    assert.equal(payload.attendance, 24);
+    assert.deepEqual(
+      [payload.hasFood, payload.externalGuests, payload.itNeeds],
+      [true, true, true],
+    );
+  });
+
+  it("leaves out fields the store assigns and form-only guidance", () => {
+    const payload = prepareSubmission({ ...VALID_FORM, requiredFeatures: ["Projector"] }, ROOMS);
+    assert.ok(payload);
+    for (const key of ["id", "requester", "status", "submittedAt", "history", "risk"]) {
+      assert.equal(key in payload, false, key);
+    }
+    assert.equal("requiredFeatures" in payload, false);
+  });
+
+  it("returns null when a required field is missing", () => {
+    assert.equal(prepareSubmission({ ...VALID_FORM, advisor: "" }, ROOMS), null);
+  });
+
+  it("returns null when validation has an error", () => {
+    assert.equal(prepareSubmission({ ...VALID_FORM, attendance: "40" }, ROOMS), null);
+  });
+
+  it("allows submission despite warnings", () => {
+    assert.ok(prepareSubmission({ ...VALID_FORM, hasFood: true }, ROOMS));
+  });
+
+  it("returns null when the room is already booked for that time", () => {
+    const booked: BookedSlot[] = [
       {
         id: "REQ-1",
         room: "seminar-201",
         date: VALID_FORM.date,
         startTime: VALID_FORM.startTime,
         endTime: VALID_FORM.endTime,
-        status: "pending" as const,
+        status: "pending",
       },
     ];
-    const state = stateWith(VALID_FORM);
-    assert.equal(reduce(state, { type: "submit", reservations: booked }), state);
+    assert.equal(prepareSubmission(VALID_FORM, ROOMS, booked), null);
   });
 });
