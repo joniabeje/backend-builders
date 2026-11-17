@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { ReservationRepository } from "@/data/reservation-repository";
 import { useReservationRepository } from "@/data/reservation-repository-context";
 import type { EventRequest, NewReservation } from "@/domain/reservation";
 import type { ReviewInput } from "@/domain/review-decision";
@@ -9,12 +10,25 @@ const reservationKeys = {
   list: () => [...reservationKeys.all, "list"] as const,
 };
 
-export function useReservations() {
-  const repository = useReservationRepository();
-  return useQuery({
+/** How often an open page re-reads the list, so admin decisions reach /dashboard (#37). */
+export const RESERVATIONS_REFRESH_INTERVAL_MS = 30_000;
+
+/**
+ * The reservation list query shared by /dashboard, /admin, /rooms and the form.
+ * Refetches on an interval and when the tab regains focus; a hidden tab does not poll.
+ */
+export function reservationListQueryOptions(repository: ReservationRepository) {
+  return queryOptions({
     queryKey: reservationKeys.list(),
     queryFn: () => repository.list(),
+    refetchInterval: RESERVATIONS_REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
+}
+
+export function useReservations() {
+  return useQuery(reservationListQueryOptions(useReservationRepository()));
 }
 
 /**
