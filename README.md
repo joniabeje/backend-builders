@@ -141,6 +141,23 @@ The same diagram, plus the as-is layered view of the repository, the today-versu
 - Event status tracking (pending, approved, rejected)
 - Reservation history and analytics
 
+### Risk detection
+
+One rule set in [`src/domain/risk.ts`](src/domain/risk.ts) (`RISK_POLICY`, `computeRisk`) is used by the reserve form and the admin page. The repository computes risk once when a reservation is stored and saves it on the record, so every page shows the same result. When the reservation API (#13) exists, the server will run the same function at submit time.
+
+| Factor              | Rule                                                                                                                             | Points        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| Elevated attendance | 75 to 149 attendees                                                                                                              | 1             |
+| Large attendance    | 150 or more attendees                                                                                                            | 2             |
+| External guests     | Guests from outside Howard                                                                                                       | 1             |
+| After-hours         | Starts before 08:00 or at/after 18:00, or ends before 08:00 or at/after 20:00. Calculated from the times, never entered by hand. | 1             |
+| Food service        | Food or catering                                                                                                                 | 1             |
+| Security staffing   | External guests with 50 or more attendees                                                                                        | 0 (flag only) |
+
+A score of 0 or 1 is **low**, 2 or 3 is **medium**, and 4 or more is **high**. A high-risk request is marked **requires additional review**. Requests with data that cannot be scored (bad attendance or times) are also marked high and sent to review instead of failing. Every factor carries a reason string, which the admin table displays.
+
+> These thresholds are defaults pending confirmation from the CEA policy owner. They keep the behavior the form and admin page already had. See `DEBT_AND_RISK.md#risk-02` for the fairness concern about these heuristics.
+
 ## 📁 Project Structure
 
 ```

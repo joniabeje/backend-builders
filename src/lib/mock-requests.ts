@@ -1,7 +1,10 @@
-import type { EventRequest } from "@/domain/reservation";
+import type { UnscoredEventRequest } from "@/domain/reservation";
 
-/** Seed data for InMemoryReservationRepository. Routes must not import this directly. */
-export const MOCK_REQUESTS: readonly EventRequest[] = [
+/**
+ * Seed data for InMemoryReservationRepository. Routes must not import this directly.
+ * Risk is not stored here; the repository computes it from these fields (#5).
+ */
+export const MOCK_REQUESTS: readonly UnscoredEventRequest[] = [
   {
     id: "REQ-1042",
     title: "NSBE General Body Meeting",
@@ -15,7 +18,6 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     status: "pending",
     hasFood: true,
     externalGuests: false,
-    afterHours: true,
     itNeeds: true,
     submittedAt: "2026-04-27",
     history: [],
@@ -33,7 +35,6 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     status: "approved",
     hasFood: true,
     externalGuests: true,
-    afterHours: true,
     itNeeds: true,
     submittedAt: "2026-04-22",
     history: [
@@ -53,7 +54,6 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     status: "approved",
     hasFood: false,
     externalGuests: false,
-    afterHours: false,
     itNeeds: true,
     submittedAt: "2026-04-20",
     history: [
@@ -73,7 +73,6 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     status: "needs-changes",
     hasFood: true,
     externalGuests: true,
-    afterHours: true,
     itNeeds: false,
     submittedAt: "2026-04-25",
     history: [
@@ -100,7 +99,6 @@ export const MOCK_REQUESTS: readonly EventRequest[] = [
     status: "rejected",
     hasFood: false,
     externalGuests: false,
-    afterHours: false,
     itNeeds: true,
     submittedAt: "2026-04-18",
     history: [

@@ -1,7 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
-  isAfterHours,
   parseAttendance,
   parseTimeOfDay,
   validateReservation,
@@ -79,21 +78,6 @@ describe("parseTimeOfDay", () => {
     for (const bad of ["", "7:00", "24:00", "12:60", "noon", "12-30"]) {
       assert.equal(parseTimeOfDay(bad), null, bad);
     }
-  });
-});
-
-describe("isAfterHours (matches the prototype's hour-based rule)", () => {
-  const at = (hhmm: string) => parseTimeOfDay(hhmm) ?? assert.fail(hhmm);
-
-  it("is false for a normal daytime event", () => {
-    assert.equal(isAfterHours(at("08:00"), at("17:59")), false);
-    assert.equal(isAfterHours(at("17:59"), at("19:59")), false);
-  });
-
-  it("is true for early starts, late starts, and late ends", () => {
-    assert.equal(isAfterHours(at("07:59"), at("10:00")), true);
-    assert.equal(isAfterHours(at("18:00"), at("19:00")), true);
-    assert.equal(isAfterHours(at("12:00"), at("20:00")), true);
   });
 });
 
@@ -186,6 +170,51 @@ describe("validateReservation", () => {
 
   it("does not raise the security warning below 50 attendees", () => {
     assert.deepEqual(codesFor({ externalGuests: true, attendance: "49", room: "lkd-aud" }), []);
+  });
+
+  it("warns that a high-risk request gets additional review, without blocking it", () => {
+    const result = validateReservation(
+      {
+        ...VALID_FORM,
+        room: "lkd-aud",
+        attendance: "150",
+        startTime: "18:00",
+        endTime: "21:00",
+        hasFood: true,
+      },
+      ROOMS,
+    );
+    assert.deepEqual(
+      result.issues.map((i) => i.code),
+      ["after-hours", "food-service", "risk-review"],
+    );
+    assert.equal(result.risk.level, "high");
+    assert.equal(result.risk.requiresReview, true);
+    assert.equal(result.canSubmit, true);
+  });
+
+  it("reports the same risk the admin page will store for the request", () => {
+    const result = validateReservation(
+      { ...VALID_FORM, room: "lkd-aud", attendance: "75", externalGuests: true },
+      ROOMS,
+    );
+    assert.equal(result.risk.level, "medium");
+    assert.deepEqual(
+      result.risk.factors.map((factor) => factor.code),
+      ["elevated-attendance", "external-guests", "security-staffing"],
+    );
+  });
+
+  it("scores a partly filled form as a lower bound and fills in after-hours later", () => {
+    const partial = validateReservation(
+      { ...VALID_FORM, startTime: "", endTime: "", hasFood: true },
+      ROOMS,
+    );
+    assert.deepEqual(
+      partial.issues.map((i) => i.code),
+      ["food-service"],
+    );
+    assert.equal(partial.risk.score, 1);
   });
 });
 
