@@ -16,6 +16,7 @@ const request = (overrides: Partial<EventRequest> = {}): EventRequest => ({
   organization: "NSBE",
   requester: "J. Abeje",
   advisor: "Dr. Williams",
+  advisorEmail: "williams@howard.edu",
   purpose: "Chapter meeting",
   date: "2026-11-04",
   startTime: "12:00",

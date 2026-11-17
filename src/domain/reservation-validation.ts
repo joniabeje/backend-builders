@@ -15,6 +15,7 @@ export type ReservationForm = {
   title: string;
   organization: string;
   advisor: string;
+  advisorEmail: string;
   /** "YYYY-MM-DD", as produced by <input type="date">. */
   date: string;
   /** "HH:mm" (24h), as produced by <input type="time">. */
@@ -41,6 +42,7 @@ export type RoomCapacity = Pick<Room, "id" | "name" | "capacity"> & {
 export type IssueSeverity = "error" | "warn";
 
 export type IssueCode =
+  | "advisor-email-invalid"
   | "attendance-invalid"
   | "attendance-min"
   | "room-unknown"
@@ -105,6 +107,7 @@ const REQUIRED_FIELDS = [
   "title",
   "organization",
   "advisor",
+  "advisorEmail",
   "date",
   "startTime",
   "endTime",
@@ -125,6 +128,28 @@ export function parseAttendance(value: string): number | null {
 
 function hasRequiredFields(form: ReservationForm): boolean {
   return REQUIRED_FIELDS.every((field) => form[field].trim() !== "");
+}
+
+/**
+ * One "@", no spaces, and a dot in the domain. Deliberately loose: the goal is to catch
+ * typos, not to decide which addresses exist. Not limited to howard.edu, since some
+ * advisors are external partners.
+ */
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_FORMAT.test(value.trim());
+}
+
+function advisorEmailIssues(email: string): ValidationIssue[] {
+  if (email.trim() === "" || isValidEmail(email)) return [];
+  return [
+    {
+      code: "advisor-email-invalid",
+      severity: "error",
+      message: "Enter the advisor's email address, like name@howard.edu.",
+    },
+  ];
 }
 
 function attendanceIssues(raw: string, attendance: number | null): ValidationIssue[] {
@@ -245,6 +270,7 @@ export function validateReservation(
   const parsedAttendance = parseAttendance(form.attendance);
   const attendance = parsedAttendance ?? 0;
   const issues: ValidationIssue[] = [
+    ...advisorEmailIssues(form.advisorEmail),
     ...attendanceIssues(form.attendance, parsedAttendance),
     ...roomIssues(form.room, attendance, rooms),
     ...conflictIssues(form, rooms, reservations),

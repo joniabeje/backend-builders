@@ -5,6 +5,7 @@ import { FormField, FormSection, ToggleField, inputClassName } from "@/component
 import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
 import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
 import { ValidationPanel } from "@/components/reserve/ValidationPanel";
+import type { IssueCode } from "@/domain/reservation-validation";
 import { useReservationForm, type AvailabilityStatus } from "@/hooks/use-reservation-form";
 import { ROOMS, ROOM_FEATURES } from "@/lib/rooms";
 import { CalendarCheck2 } from "lucide-react";
@@ -68,6 +69,7 @@ function ReservePage() {
     reset,
   } = useReservationForm();
   const { attendance, issues, requiredFieldsFilled, canSubmit } = validation;
+  const issueMessage = (code: IssueCode) => issues.find((issue) => issue.code === code)?.message;
   // Keep a selected room that just became unavailable visible, so the select does not
   // silently show "Select a room…" while the conflict error explains what happened.
   const selectedRoomUnavailable =
@@ -138,6 +140,15 @@ function ReservePage() {
                     value={form.advisor}
                     onChange={(e) => update("advisor", e.target.value)}
                     placeholder="Dr. Last Name"
+                  />
+                </FormField>
+                <FormField label="Advisor Email *" error={issueMessage("advisor-email-invalid")}>
+                  <input
+                    type="email"
+                    className={inputClassName}
+                    value={form.advisorEmail}
+                    onChange={(e) => update("advisorEmail", e.target.value)}
+                    placeholder="name@howard.edu"
                   />
                 </FormField>
                 <FormField label="Expected Attendance *">

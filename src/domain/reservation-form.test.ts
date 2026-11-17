@@ -16,6 +16,7 @@ const VALID_FORM: ReservationForm = {
   title: "NSBE General Body Meeting",
   organization: "NSBE — Howard Chapter",
   advisor: "Dr. Williams",
+  advisorEmail: "williams@howard.edu",
   date: "2026-11-04",
   startTime: "12:00",
   endTime: "13:00",
@@ -83,6 +84,7 @@ describe("prepareSubmission", () => {
       title: "NSBE General Body Meeting",
       organization: "NSBE — Howard Chapter",
       advisor: "Dr. Williams",
+      advisorEmail: "williams@howard.edu",
       purpose: "Monthly chapter meeting",
       date: "2026-11-04",
       startTime: "12:00",
@@ -101,6 +103,7 @@ describe("prepareSubmission", () => {
         ...VALID_FORM,
         title: "  Robotics Workshop ",
         advisor: " Dr. Harris",
+        advisorEmail: " harris@howard.edu ",
         attendance: " 24 ",
         hasFood: true,
         externalGuests: true,
@@ -111,6 +114,7 @@ describe("prepareSubmission", () => {
     assert.ok(payload);
     assert.equal(payload.title, "Robotics Workshop");
     assert.equal(payload.advisor, "Dr. Harris");
+    assert.equal(payload.advisorEmail, "harris@howard.edu");
     assert.equal(payload.attendance, 24);
     assert.deepEqual(
       [payload.hasFood, payload.externalGuests, payload.itNeeds],

@@ -33,6 +33,7 @@ async function submitRequest(page: Page, request: Request) {
   await page.getByLabel("Event Title *").fill(request.title);
   await page.getByLabel("Organization *").fill("Backend Builders");
   await page.getByLabel("Faculty Advisor *").fill("Dr. Williams");
+  await page.getByLabel("Advisor Email *").fill("williams@howard.edu");
   await page.getByLabel("Expected Attendance *").fill(request.attendance);
   await page.getByLabel("Event Purpose *").fill("End-to-end test of the reservation form.");
   await page.getByRole("combobox").selectOption(request.room);

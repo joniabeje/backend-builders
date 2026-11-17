@@ -19,6 +19,7 @@ const VALID_FORM: ReservationForm = {
   title: "NSBE General Body Meeting",
   organization: "NSBE — Howard Chapter",
   advisor: "Dr. Williams",
+  advisorEmail: "williams@howard.edu",
   date: "2026-11-04",
   startTime: "12:00",
   endTime: "13:00",
@@ -35,6 +36,7 @@ const EMPTY_FORM: ReservationForm = {
   title: "",
   organization: "",
   advisor: "",
+  advisorEmail: "",
   date: "",
   startTime: "",
   endTime: "",
@@ -215,6 +217,27 @@ describe("validateReservation", () => {
       ["food-service"],
     );
     assert.equal(partial.risk.score, 1);
+  });
+});
+
+describe("validateReservation advisor email", () => {
+  it("requires the advisor email before the form can be submitted", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "" }, ROOMS);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.requiredFieldsFilled, false);
+    assert.equal(result.canSubmit, false);
+  });
+
+  it("blocks a malformed advisor email with a readable message", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "williams" }, ROOMS);
+    assert.deepEqual(result.issues, [
+      {
+        code: "advisor-email-invalid",
+        severity: "error",
+        message: "Enter the advisor's email address, like name@howard.edu.",
+      },
+    ]);
+    assert.equal(result.canSubmit, false);
   });
 });
 

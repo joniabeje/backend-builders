@@ -42,6 +42,7 @@ export type EventRequest = {
   requester: string;
   /** Faculty advisor's name, as entered on the form. */
   advisor: string;
+  advisorEmail: string;
   purpose: string;
   date: string;
   startTime: string;
@@ -69,6 +70,7 @@ export type NewReservation = Pick<
   | "title"
   | "organization"
   | "advisor"
+  | "advisorEmail"
   | "purpose"
   | "date"
   | "startTime"

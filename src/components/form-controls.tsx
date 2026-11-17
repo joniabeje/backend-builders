@@ -18,18 +18,26 @@ export function FormField({
   label,
   children,
   full,
+  error,
 }: {
   label: string;
   children: ReactNode;
   /** Spans both columns of a two-column grid. */
   full?: boolean;
+  /** Shown under the input, for rules that belong to this one field. */
+  error?: string;
 }) {
   return (
     <label className={`block ${full ? "md:col-span-2" : ""}`}>
       <span className="text-sm font-medium text-foreground">{label}</span>
       <div className="mt-1.5">{children}</div>
+      {error && <FieldError message={error} />}
     </label>
   );
+}
+
+function FieldError({ message }: { message: string }) {
+  return <span className="mt-1.5 block text-xs text-destructive">{message}</span>;
 }
 
 export function ToggleField({
