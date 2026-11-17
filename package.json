@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "emulators": "firebase emulators:start --project demo-cea-reserve",
+    "seed": "vite-node --config vitest.integration.config.ts scripts/seed.ts --",
     "test:integration": "firebase emulators:exec --only firestore --project demo-cea-reserve \"vitest run --config vitest.integration.config.ts\"",
     "format": "prettier --write ."
   },

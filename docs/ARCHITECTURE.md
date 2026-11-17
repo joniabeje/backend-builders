@@ -66,6 +66,7 @@ flowchart LR
 
 - Java 21 or newer is required for the Firebase Emulator (`winget install Microsoft.OpenJDK.21` on Windows).
 - `npm run emulators` starts Firestore locally under the placeholder project `demo-cea-reserve`. `demo-` projects never reach Google's servers and need no credentials.
+- With the emulator running, `npm run seed` loads the room catalog and the demo reservations with their history. It is safe to run again. Against a real project (`FIREBASE_PROJECT_ID`) it refuses demo data and needs `--rooms-only`.
 - `npm run test:integration` starts the emulator, runs the integration tests against it, and stops it.
 - The real Firebase project id is only needed for deployment.
 
@@ -81,3 +82,5 @@ flowchart LR
 | `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                   |
 
 Reservations are never deleted, including rejected ones, so history and analytics stay complete (#50).
+
+**Indexes** (`firestore.indexes.json`). Firestore indexes every single field automatically, which covers the double-booking check (`room` and `date` equality), the date-range query on `date` (#50) and ordering history by `at`. The one composite index is `requesterId` + `submittedAt` descending, for "my requests, newest first" on `/dashboard` (#36). Add an index here in the same PR as any new query that filters on one field and sorts on another.
