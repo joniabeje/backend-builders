@@ -1,4 +1,5 @@
 import type { EventRequest, NewReservation } from "@/domain/reservation";
+import type { ValidationIssue } from "@/domain/reservation-validation";
 import type { ReviewInput } from "@/domain/review-decision";
 import type { BookedSlot } from "@/domain/room-availability";
 
@@ -43,5 +44,16 @@ export class ReservationConflictError extends Error {
     );
     this.name = "ReservationConflictError";
     this.conflicts = conflicts;
+  }
+}
+
+/** Field validation failed on create. The API returns 400 with these issues (#32, #55). */
+export class ReservationValidationError extends Error {
+  readonly issues: readonly ValidationIssue[];
+
+  constructor(issues: readonly ValidationIssue[]) {
+    super("The reservation could not be created because of validation errors.");
+    this.name = "ReservationValidationError";
+    this.issues = issues;
   }
 }

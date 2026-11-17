@@ -14,6 +14,9 @@ import { Route as ReserveRouteImport } from './routes/reserve'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiRoomsRouteImport } from './routes/api/rooms'
+import { Route as ApiReservationsRouteImport } from './routes/api/reservations'
+import { Route as ApiReservationsIdRouteImport } from './routes/api/reservations.$id'
 
 const RoomsRoute = RoomsRouteImport.update({
   id: '/rooms',
@@ -40,6 +43,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRoomsRoute = ApiRoomsRouteImport.update({
+  id: '/api/rooms',
+  path: '/api/rooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReservationsRoute = ApiReservationsRouteImport.update({
+  id: '/api/reservations',
+  path: '/api/reservations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReservationsIdRoute = ApiReservationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiReservationsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +65,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/api/reservations': typeof ApiReservationsRouteWithChildren
+  '/api/rooms': typeof ApiRoomsRoute
+  '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +75,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/api/reservations': typeof ApiReservationsRouteWithChildren
+  '/api/rooms': typeof ApiRoomsRoute
+  '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +86,41 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/api/reservations': typeof ApiReservationsRouteWithChildren
+  '/api/rooms': typeof ApiRoomsRoute
+  '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/dashboard' | '/reserve' | '/rooms'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/reserve'
+    | '/rooms'
+    | '/api/reservations'
+    | '/api/rooms'
+    | '/api/reservations/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/dashboard' | '/reserve' | '/rooms'
-  id: '__root__' | '/' | '/admin' | '/dashboard' | '/reserve' | '/rooms'
+  to:
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/reserve'
+    | '/rooms'
+    | '/api/reservations'
+    | '/api/rooms'
+    | '/api/reservations/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/reserve'
+    | '/rooms'
+    | '/api/reservations'
+    | '/api/rooms'
+    | '/api/reservations/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +129,8 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   ReserveRoute: typeof ReserveRoute
   RoomsRoute: typeof RoomsRoute
+  ApiReservationsRoute: typeof ApiReservationsRouteWithChildren
+  ApiRoomsRoute: typeof ApiRoomsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,8 +170,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rooms': {
+      id: '/api/rooms'
+      path: '/api/rooms'
+      fullPath: '/api/rooms'
+      preLoaderRoute: typeof ApiRoomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reservations': {
+      id: '/api/reservations'
+      path: '/api/reservations'
+      fullPath: '/api/reservations'
+      preLoaderRoute: typeof ApiReservationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/reservations/$id': {
+      id: '/api/reservations/$id'
+      path: '/$id'
+      fullPath: '/api/reservations/$id'
+      preLoaderRoute: typeof ApiReservationsIdRouteImport
+      parentRoute: typeof ApiReservationsRoute
+    }
   }
 }
+
+interface ApiReservationsRouteChildren {
+  ApiReservationsIdRoute: typeof ApiReservationsIdRoute
+}
+
+const ApiReservationsRouteChildren: ApiReservationsRouteChildren = {
+  ApiReservationsIdRoute: ApiReservationsIdRoute,
+}
+
+const ApiReservationsRouteWithChildren = ApiReservationsRoute._addFileChildren(
+  ApiReservationsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -125,6 +212,8 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   ReserveRoute: ReserveRoute,
   RoomsRoute: RoomsRoute,
+  ApiReservationsRoute: ApiReservationsRouteWithChildren,
+  ApiRoomsRoute: ApiRoomsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
