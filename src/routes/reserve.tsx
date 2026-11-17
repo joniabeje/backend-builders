@@ -72,6 +72,7 @@ function ReservePage() {
     availableRooms,
     recommendations,
     update,
+    toggleFeature,
     submit,
     reset,
   } = useReservationForm();
@@ -227,14 +228,7 @@ function ReservePage() {
                         key={feature}
                         type="button"
                         aria-pressed={selected}
-                        onClick={() =>
-                          update(
-                            "requiredFeatures",
-                            selected
-                              ? form.requiredFeatures.filter((f) => f !== feature)
-                              : [...form.requiredFeatures, feature],
-                          )
-                        }
+                        onClick={() => toggleFeature(feature)}
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-smooth ${selected ? "border-primary bg-primary/10 text-foreground" : "border-border bg-background text-muted-foreground hover:border-primary/40"}`}
                       >
                         {feature}

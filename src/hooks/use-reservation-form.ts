@@ -75,6 +75,10 @@ export function useReservationForm() {
       dispatch({ type: "update", field, value } as ReservationFormAction),
     [],
   );
+  const toggleFeature = useCallback(
+    (feature: string) => dispatch({ type: "toggleFeature", feature }),
+    [],
+  );
   const { mutate: saveReservation, reset: clearSaveError } = createReservation;
   const submit = useCallback(() => {
     if (!reservationsLoaded) return;
@@ -100,6 +104,7 @@ export function useReservationForm() {
     availableRooms,
     recommendations,
     update,
+    toggleFeature,
     submit,
     reset,
   };
