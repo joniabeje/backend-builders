@@ -40,6 +40,36 @@ function FieldError({ message }: { message: string }) {
   return <span className="mt-1.5 block text-xs text-destructive">{message}</span>;
 }
 
+export function CheckboxField({
+  label,
+  checked,
+  onChange,
+  error,
+  full,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  error?: string;
+  /** Spans both columns of a two-column grid. */
+  full?: boolean;
+}) {
+  return (
+    <div className={full ? "md:col-span-2" : undefined}>
+      <label className="flex items-start gap-2.5 text-sm font-medium text-foreground">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+        />
+        {label}
+      </label>
+      {error && <FieldError message={error} />}
+    </div>
+  );
+}
+
 export function ToggleField({
   label,
   checked,

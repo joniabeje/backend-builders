@@ -36,6 +36,7 @@ async function submitRequest(page: Page, request: Request) {
   await page.getByLabel("Advisor Email *").fill("williams@howard.edu");
   await page.getByLabel("Expected Attendance *").fill(request.attendance);
   await page.getByLabel("Event Purpose *").fill("End-to-end test of the reservation form.");
+  await page.getByLabel("My faculty advisor has approved this event *").check();
   await page.getByRole("combobox").selectOption(request.room);
   if (request.food) await page.getByRole("button", { name: "Food / catering" }).click();
 

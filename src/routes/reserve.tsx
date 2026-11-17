@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { FormField, FormSection, ToggleField, inputClassName } from "@/components/form-controls";
+import {
+  CheckboxField,
+  FormField,
+  FormSection,
+  ToggleField,
+  inputClassName,
+} from "@/components/form-controls";
 import { ReservationSuccess } from "@/components/reserve/ReservationSuccess";
 import { RoomRecommendations } from "@/components/reserve/RoomRecommendations";
 import { ValidationPanel } from "@/components/reserve/ValidationPanel";
@@ -170,6 +176,13 @@ function ReservePage() {
                     placeholder="Brief description of the event..."
                   />
                 </FormField>
+                <CheckboxField
+                  full
+                  label="My faculty advisor has approved this event *"
+                  checked={form.advisorApproved}
+                  onChange={(v) => update("advisorApproved", v)}
+                  error={issueMessage("advisor-approval-missing")}
+                />
               </div>
             </FormSection>
 

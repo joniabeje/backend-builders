@@ -16,6 +16,8 @@ export type ReservationForm = {
   organization: string;
   advisor: string;
   advisorEmail: string;
+  /** The requester confirms their faculty advisor has approved the event. */
+  advisorApproved: boolean;
   /** "YYYY-MM-DD", as produced by <input type="date">. */
   date: string;
   /** "HH:mm" (24h), as produced by <input type="time">. */
@@ -42,6 +44,7 @@ export type RoomCapacity = Pick<Room, "id" | "name" | "capacity"> & {
 export type IssueSeverity = "error" | "warn";
 
 export type IssueCode =
+  | "advisor-approval-missing"
   | "advisor-email-invalid"
   | "attendance-invalid"
   | "attendance-min"
@@ -101,6 +104,12 @@ const RISK_REVIEW_WARNING: ValidationIssue = {
   code: "risk-review",
   severity: "warn",
   message: "High-risk event — the Dean's Office will give this request additional review.",
+};
+
+const ADVISOR_APPROVAL_MISSING: ValidationIssue = {
+  code: "advisor-approval-missing",
+  severity: "error",
+  message: "Confirm that your faculty advisor has approved this event.",
 };
 
 const REQUIRED_FIELDS = [
@@ -298,6 +307,8 @@ export function validateReservation(
   if (risk.requiresReview) issues.push(RISK_REVIEW_WARNING);
 
   const requiredFieldsFilled = hasRequiredFields(form);
+  // Raised only once everything else is filled in, so an empty form still starts clean.
+  if (requiredFieldsFilled && !form.advisorApproved) issues.push(ADVISOR_APPROVAL_MISSING);
   const hasErrors = issues.some((issue) => issue.severity === "error");
 
   return {

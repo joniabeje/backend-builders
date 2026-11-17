@@ -20,6 +20,7 @@ const VALID_FORM: ReservationForm = {
   organization: "NSBE — Howard Chapter",
   advisor: "Dr. Williams",
   advisorEmail: "williams@howard.edu",
+  advisorApproved: true,
   date: "2026-11-04",
   startTime: "12:00",
   endTime: "13:00",
@@ -37,6 +38,7 @@ const EMPTY_FORM: ReservationForm = {
   organization: "",
   advisor: "",
   advisorEmail: "",
+  advisorApproved: false,
   date: "",
   startTime: "",
   endTime: "",
@@ -237,6 +239,21 @@ describe("validateReservation advisor email", () => {
         message: "Enter the advisor's email address, like name@howard.edu.",
       },
     ]);
+    assert.equal(result.canSubmit, false);
+  });
+});
+
+describe("validateReservation advisor approval", () => {
+  it("blocks a complete form until advisor approval is confirmed", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorApproved: false }, ROOMS);
+    assert.deepEqual(result.issues, [
+      {
+        code: "advisor-approval-missing",
+        severity: "error",
+        message: "Confirm that your faculty advisor has approved this event.",
+      },
+    ]);
+    assert.equal(result.requiredFieldsFilled, true);
     assert.equal(result.canSubmit, false);
   });
 });

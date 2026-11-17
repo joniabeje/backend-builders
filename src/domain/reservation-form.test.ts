@@ -17,6 +17,7 @@ const VALID_FORM: ReservationForm = {
   organization: "NSBE — Howard Chapter",
   advisor: "Dr. Williams",
   advisorEmail: "williams@howard.edu",
+  advisorApproved: true,
   date: "2026-11-04",
   startTime: "12:00",
   endTime: "13:00",
@@ -85,6 +86,7 @@ describe("prepareSubmission", () => {
       organization: "NSBE — Howard Chapter",
       advisor: "Dr. Williams",
       advisorEmail: "williams@howard.edu",
+      advisorApproved: true,
       purpose: "Monthly chapter meeting",
       date: "2026-11-04",
       startTime: "12:00",
@@ -133,6 +135,10 @@ describe("prepareSubmission", () => {
 
   it("returns null when a required field is missing", () => {
     assert.equal(prepareSubmission({ ...VALID_FORM, advisor: "" }, ROOMS), null);
+  });
+
+  it("returns null until advisor approval is confirmed", () => {
+    assert.equal(prepareSubmission({ ...VALID_FORM, advisorApproved: false }, ROOMS), null);
   });
 
   it("returns null when validation has an error", () => {
