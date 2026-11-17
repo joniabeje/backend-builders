@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
+  isValidEmail,
   parseAttendance,
   parseTimeOfDay,
   validateReservation,
@@ -241,6 +242,40 @@ describe("validateReservation advisor email", () => {
     ]);
     assert.equal(result.canSubmit, false);
   });
+
+  it("treats a whitespace-only advisor email as missing, not malformed", () => {
+    const result = validateReservation({ ...VALID_FORM, advisorEmail: "   " }, ROOMS);
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.requiredFieldsFilled, false);
+  });
+});
+
+describe("isValidEmail", () => {
+  it("accepts ordinary addresses, subdomains, capitals and surrounding spaces", () => {
+    for (const email of [
+      "williams@howard.edu",
+      "first.last@bison.howard.edu",
+      "J.Okafor@Howard.EDU",
+      "advisor+events@gmail.com",
+      " williams@howard.edu ",
+    ]) {
+      assert.equal(isValidEmail(email), true, email);
+    }
+  });
+
+  it("rejects addresses missing a part or containing spaces or a second @", () => {
+    for (const email of [
+      "williams",
+      "williams@",
+      "@howard.edu",
+      "williams@howard",
+      "williams@@howard.edu",
+      "will iams@howard.edu",
+      "williams@howard .edu",
+    ]) {
+      assert.equal(isValidEmail(email), false, email);
+    }
+  });
 });
 
 describe("validateReservation advisor approval", () => {
@@ -255,6 +290,21 @@ describe("validateReservation advisor approval", () => {
     ]);
     assert.equal(result.requiredFieldsFilled, true);
     assert.equal(result.canSubmit, false);
+  });
+
+  it("waits for the rest of the form before asking for approval", () => {
+    assert.deepEqual(codesFor({ advisorApproved: false, purpose: "" }), []);
+  });
+
+  it("reports missing approval alongside other errors", () => {
+    assert.deepEqual(codesFor({ advisorApproved: false, attendance: "30" }), [
+      "room-capacity",
+      "advisor-approval-missing",
+    ]);
+  });
+
+  it("allows submission once approval is confirmed", () => {
+    assert.equal(validateReservation(VALID_FORM, ROOMS).canSubmit, true);
   });
 });
 

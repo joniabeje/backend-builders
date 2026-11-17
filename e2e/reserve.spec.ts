@@ -88,6 +88,35 @@ test.describe("/reserve", () => {
     await expect(row).toContainText("Requires additional review");
   });
 
+  test("explains a bad advisor email and missing approval inline", async ({ page }) => {
+    await page.goto("/reserve");
+    await enterSlot(page, { date: "2026-12-03", start: "10:00", end: "11:00" });
+
+    await page.getByLabel("Event Title *").fill("Advisor Check");
+    await page.getByLabel("Organization *").fill("Backend Builders");
+    await page.getByLabel("Faculty Advisor *").fill("Dr. Williams");
+    await page.getByLabel("Advisor Email *").fill("williams");
+    await page.getByLabel("Expected Attendance *").fill("20");
+    await page.getByLabel("Event Purpose *").fill("Checks the advisor rules.");
+    await page.getByRole("combobox").selectOption("seminar-201");
+
+    const submit = page.getByRole("button", { name: "Submit Request" });
+    const emailHint = "Enter the advisor's email address, like name@howard.edu.";
+    const approvalHint = "Confirm that your faculty advisor has approved this event.";
+    // Each message appears inline under its field and again in the validation panel.
+    await expect(page.getByText(emailHint)).toHaveCount(2);
+    await expect(page.getByText(approvalHint)).toHaveCount(2);
+    await expect(submit).toBeDisabled();
+
+    await page.getByLabel("Advisor Email *").fill("williams@howard.edu");
+    await expect(page.getByText(emailHint)).toHaveCount(0);
+    await expect(submit).toBeDisabled();
+
+    await page.getByLabel("My faculty advisor has approved this event *").check();
+    await expect(page.getByText(approvalHint)).toHaveCount(0);
+    await expect(submit).toBeEnabled();
+  });
+
   test("blocks submission when attendance exceeds the room's capacity", async ({ page }) => {
     await page.goto("/reserve");
     await enterSlot(page, { date: "2026-12-01", start: "10:00", end: "11:00" });
