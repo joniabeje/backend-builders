@@ -81,3 +81,5 @@ flowchart LR
 | `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                   |
 
 Reservations are never deleted, including rejected ones, so history and analytics stay complete (#50).
+
+**Indexes** (`firestore.indexes.json`). Firestore indexes every single field automatically, which covers the double-booking check (`room` and `date` equality), the date-range query on `date` (#50) and ordering history by `at`. The one composite index is `requesterId` + `submittedAt` descending, for "my requests, newest first" on `/dashboard` (#36). Add an index here in the same PR as any new query that filters on one field and sorts on another.
