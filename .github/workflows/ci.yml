@@ -27,7 +27,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit tests with coverage (src/lib/**)
+      - name: Unit tests with coverage (src/domain, src/data, src/lib)
         run: npm run test:coverage
 
       - name: Build

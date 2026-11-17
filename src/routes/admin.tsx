@@ -8,7 +8,6 @@ import { ReviewDecisionDialog } from "@/components/admin/ReviewDecisionDialog";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/domain/reservation";
 import type { ReviewDecision } from "@/domain/review-decision";
 import { useReservations, useReviewReservation } from "@/hooks/use-reservations";
-import { riskScore } from "@/lib/risk-score";
 import { getRoomDisplayName } from "@/lib/rooms";
 import {
   CheckCircle2,
@@ -108,7 +107,7 @@ function AdminPage() {
     },
     {
       label: "High Risk",
-      value: requests.filter((r) => riskScore(r).level === "high").length,
+      value: requests.filter((r) => r.risk.requiresReview).length,
       icon: AlertTriangle,
       tone: "destructive",
     },
@@ -177,11 +176,13 @@ function AdminPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((r) => {
-                const risk = riskScore(r);
+                const { risk } = r;
                 const historyOpen = expanded.has(r.id);
                 return (
                   <Fragment key={r.id}>
-                    <tr className="hover:bg-secondary/40 transition-smooth">
+                    <tr
+                      className={`hover:bg-secondary/40 transition-smooth ${risk.requiresReview ? "bg-destructive/5" : ""}`}
+                    >
                       <td className="px-4 py-4">
                         <div className="font-semibold text-foreground">{r.title}</div>
                         <div className="text-xs text-muted-foreground">
@@ -207,9 +208,17 @@ function AdminPage() {
                           {risk.level !== "low" && <AlertTriangle className="h-3 w-3" />}
                           {risk.level}
                         </span>
-                        {risk.reasons.length > 0 && (
+                        {risk.requiresReview && (
+                          <div
+                            className="mt-1 text-[11px] font-semibold text-destructive"
+                            title={risk.reviewReason ?? undefined}
+                          >
+                            Requires additional review
+                          </div>
+                        )}
+                        {risk.factors.length > 0 && (
                           <div className="mt-1 text-[11px] text-muted-foreground">
-                            {risk.reasons.join(" · ")}
+                            {risk.factors.map((factor) => factor.reason).join(" · ")}
                           </div>
                         )}
                       </td>

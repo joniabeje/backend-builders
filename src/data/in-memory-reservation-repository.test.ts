@@ -1,11 +1,11 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import type { EventRequest, RequestStatus } from "@/domain/reservation";
+import type { RequestStatus, UnscoredEventRequest } from "@/domain/reservation";
 import { ReviewFeedbackError, type ReviewDecision } from "@/domain/review-decision";
 import { InMemoryReservationRepository } from "./in-memory-reservation-repository";
 import { ReservationNotFoundError } from "./reservation-repository";
 
-function reservation(id: string, status: RequestStatus = "pending"): EventRequest {
+function reservation(id: string, status: RequestStatus = "pending"): UnscoredEventRequest {
   return {
     id,
     title: `Event ${id}`,
@@ -19,7 +19,6 @@ function reservation(id: string, status: RequestStatus = "pending"): EventReques
     status,
     hasFood: false,
     externalGuests: false,
-    afterHours: false,
     itNeeds: false,
     submittedAt: "2026-10-20",
     history: [],
@@ -34,6 +33,32 @@ describe("InMemoryReservationRepository", () => {
     const repository = new InMemoryReservationRepository([reservation("A"), reservation("B")]);
     const ids = (await repository.list()).map((r) => r.id);
     assert.deepEqual(ids, ["A", "B"]);
+  });
+
+  it("computes and stores risk for each reservation, deriving after-hours from the times", async () => {
+    const lateNight = { ...reservation("A"), startTime: "19:00", endTime: "22:00" };
+    const repository = new InMemoryReservationRepository([lateNight, reservation("B")]);
+    const [a, b] = await repository.list();
+    assert.deepEqual(
+      a.risk.factors.map((factor) => factor.code),
+      ["after-hours"],
+    );
+    assert.equal(b.risk.level, "low");
+  });
+
+  it("keeps the stored risk when a reservation is reviewed", async () => {
+    const big = { ...reservation("A"), attendance: 200, hasFood: true, externalGuests: true };
+    const repository = new InMemoryReservationRepository([big]);
+    const updated = await repository.review("A", { decision: "approved", feedback: "" });
+    assert.equal(updated.risk.level, "high");
+    assert.equal(updated.risk.requiresReview, true);
+  });
+
+  it("does not let callers change stored risk through a listed copy", async () => {
+    const repository = new InMemoryReservationRepository([reservation("A")]);
+    const [listed] = await repository.list();
+    (listed.risk.factors as unknown as { reason: string }[]).push({ reason: "tampered" });
+    assert.deepEqual((await repository.list())[0].risk.factors, []);
   });
 
   it("records a review and returns the updated record", async () => {

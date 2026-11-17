@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:coverage": "vitest run --coverage --coverage.include=\"src/lib/**\" --coverage.reporter=text --coverage.reporter=html --coverage.reporter=lcov",
+    "test:coverage": "vitest run --coverage --coverage.include=\"src/domain/**\" --coverage.include=\"src/data/**\" --coverage.include=\"src/lib/**\" --coverage.reporter=text --coverage.reporter=html --coverage.reporter=lcov",
     "format": "prettier --write ."
   },
   "dependencies": {

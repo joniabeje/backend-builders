@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import type { EventRequest } from "./reservation.ts";
+import { computeRisk } from "./risk.ts";
 import {
   applyReviewDecision,
   isDecisionFeedbackValid,
@@ -22,10 +23,16 @@ const request = (overrides: Partial<EventRequest> = {}): EventRequest => ({
   status: "pending",
   hasFood: false,
   externalGuests: false,
-  afterHours: false,
   itNeeds: false,
   submittedAt: "2026-10-20",
   history: [],
+  risk: computeRisk({
+    attendance: 40,
+    startTime: "12:00",
+    endTime: "13:00",
+    externalGuests: false,
+    hasFood: false,
+  }),
   ...overrides,
 });
 

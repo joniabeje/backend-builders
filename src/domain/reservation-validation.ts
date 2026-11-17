@@ -4,10 +4,11 @@
 // Callers pass the room catalog in, so the same rules can later run on the server
 // against rooms loaded from the API instead of `src/lib/rooms.ts`.
 import type { Room } from "@/lib/rooms";
+import { isAfterHours, scoreRisk, type RiskAssessment, type RiskFactorCode } from "./risk";
 import { describeConflicts, findConflicts, type BookedSlot } from "./room-availability";
 import { parseTimeOfDay } from "./time-of-day";
 
-export { parseTimeOfDay };
+export { isAfterHours, parseTimeOfDay };
 
 /** Raw values from the reservation form. Inputs are strings, toggles are booleans. */
 export type ReservationForm = {
@@ -50,7 +51,8 @@ export type IssueCode =
   | "time-order"
   | "after-hours"
   | "security-review"
-  | "food-service";
+  | "food-service"
+  | "risk-review";
 
 export type ValidationIssue = {
   /** Unique within one validation result, so it is safe to use as a React key. */
@@ -63,25 +65,41 @@ export type ReservationValidation = {
   /** Parsed attendance, or 0 when the field is empty or invalid. */
   attendance: number;
   isAfterHours: boolean;
+  /**
+   * Risk from the shared rules in ./risk. Until times and attendance are filled in it is
+   * a lower bound, since every risk factor only adds points.
+   */
+  risk: RiskAssessment;
   issues: readonly ValidationIssue[];
   requiredFieldsFilled: boolean;
   canSubmit: boolean;
 };
 
 /**
- * CEA policy thresholds. Values preserve the prototype's behavior; confirm with the
- * Dean's Office before changing them.
+ * Requester-facing warnings for risk factors, keyed by the factor that raises them and
+ * listed in display order. The rules themselves (thresholds, after-hours window) live
+ * only in ./risk.
  */
-export const RESERVATION_POLICY = {
-  /** Events starting or ending before this time are after-hours. */
-  dayStartMinutes: 8 * 60,
-  /** Events starting at or after this time are after-hours. */
-  lateStartMinutes: 18 * 60,
-  /** Events ending at or after this time are after-hours. */
-  lateEndMinutes: 20 * 60,
-  /** Attendance at which external guests trigger a security review warning. */
-  securityReviewAttendance: 50,
-} as const;
+const RISK_WARNINGS: Partial<Record<RiskFactorCode, { code: IssueCode; message: string }>> = {
+  "after-hours": {
+    code: "after-hours",
+    message: "After-hours event — supervisor confirmation required.",
+  },
+  "security-staffing": {
+    code: "security-review",
+    message: "External guests + large attendance — security may be required.",
+  },
+  "food-service": {
+    code: "food-service",
+    message: "Food service — custodial pre/post event scheduling will be triggered.",
+  },
+};
+
+const RISK_REVIEW_WARNING: ValidationIssue = {
+  code: "risk-review",
+  severity: "warn",
+  message: "High-risk event — the Dean's Office will give this request additional review.",
+};
 
 const REQUIRED_FIELDS = [
   "title",
@@ -103,16 +121,6 @@ export function parseAttendance(value: string): number | null {
   if (!WHOLE_NUMBER.test(trimmed)) return null;
   const parsed = Number(trimmed);
   return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
-export function isAfterHours(startMinutes: number, endMinutes: number): boolean {
-  const { dayStartMinutes, lateStartMinutes, lateEndMinutes } = RESERVATION_POLICY;
-  return (
-    startMinutes < dayStartMinutes ||
-    startMinutes >= lateStartMinutes ||
-    endMinutes < dayStartMinutes ||
-    endMinutes >= lateEndMinutes
-  );
 }
 
 function hasRequiredFields(form: ReservationForm): boolean {
@@ -251,27 +259,17 @@ export function validateReservation(
     afterHours = start !== null && end !== null && isAfterHours(start, end);
   }
 
-  if (afterHours) {
-    issues.push({
-      code: "after-hours",
-      severity: "warn",
-      message: "After-hours event — supervisor confirmation required.",
-    });
+  const risk = scoreRisk({
+    attendance,
+    externalGuests: form.externalGuests,
+    hasFood: form.hasFood,
+    afterHours,
+  });
+  const raised = new Set(risk.factors.map((factor) => factor.code));
+  for (const [factorCode, warning] of Object.entries(RISK_WARNINGS)) {
+    if (raised.has(factorCode as RiskFactorCode)) issues.push({ ...warning, severity: "warn" });
   }
-  if (form.externalGuests && attendance >= RESERVATION_POLICY.securityReviewAttendance) {
-    issues.push({
-      code: "security-review",
-      severity: "warn",
-      message: "External guests + large attendance — security may be required.",
-    });
-  }
-  if (form.hasFood) {
-    issues.push({
-      code: "food-service",
-      severity: "warn",
-      message: "Food service — custodial pre/post event scheduling will be triggered.",
-    });
-  }
+  if (risk.requiresReview) issues.push(RISK_REVIEW_WARNING);
 
   const requiredFieldsFilled = hasRequiredFields(form);
   const hasErrors = issues.some((issue) => issue.severity === "error");
@@ -279,6 +277,7 @@ export function validateReservation(
   return {
     attendance,
     isAfterHours: afterHours,
+    risk,
     issues,
     requiredFieldsFilled,
     canSubmit: requiredFieldsFilled && !hasErrors,
