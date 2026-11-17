@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("/admin", () => {
+  // Playwright sets VITE_USE_MOCKS=true, so the /admin guard treats the session as the
+  // demo admin without hitting Firestore (#61).
   test("lists requests with their stored risk and flags those needing review", async ({ page }) => {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Admin Dashboard" })).toBeVisible();

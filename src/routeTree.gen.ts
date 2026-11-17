@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RoomsRouteImport } from './routes/rooms'
 import { Route as ReserveRouteImport } from './routes/reserve'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -29,6 +30,11 @@ const RoomsRoute = RoomsRouteImport.update({
 const ReserveRoute = ReserveRouteImport.update({
   id: '/reserve',
   path: '/reserve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/login'
     | '/reserve'
     | '/rooms'
     | '/api/reservations'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/login'
     | '/reserve'
     | '/rooms'
     | '/api/reservations'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/login'
     | '/reserve'
     | '/rooms'
     | '/api/reservations'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   DashboardRoute: typeof DashboardRoute
+  LoginRoute: typeof LoginRoute
   ReserveRoute: typeof ReserveRoute
   RoomsRoute: typeof RoomsRoute
   ApiReservationsRoute: typeof ApiReservationsRouteWithChildren
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/reserve'
       fullPath: '/reserve'
       preLoaderRoute: typeof ReserveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -270,6 +290,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   DashboardRoute: DashboardRoute,
+  LoginRoute: LoginRoute,
   ReserveRoute: ReserveRoute,
   RoomsRoute: RoomsRoute,
   ApiReservationsRoute: ApiReservationsRouteWithChildren,

@@ -6,7 +6,7 @@ const links = [
   { to: "/rooms", label: "Rooms" },
   { to: "/dashboard", label: "My Requests" },
   { to: "/admin", label: "Admin" },
-];
+] as const;
 
 export function SiteNav() {
   return (
@@ -36,12 +36,20 @@ export function SiteNav() {
             </Link>
           ))}
         </nav>
-        <Link
-          to="/reserve"
-          className="hidden sm:inline-flex items-center justify-center rounded-md bg-gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-elegant transition-smooth hover:opacity-90"
-        >
-          New Reservation
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/login"
+            className="hidden sm:inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary hover:text-foreground"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/reserve"
+            className="hidden sm:inline-flex items-center justify-center rounded-md bg-gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-elegant transition-smooth hover:opacity-90"
+          >
+            New Reservation
+          </Link>
+        </div>
       </div>
     </header>
   );
