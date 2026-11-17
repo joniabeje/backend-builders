@@ -31,7 +31,9 @@ export class ApiReservationRepository implements ReservationRepository {
   }
 
   async list(): Promise<EventRequest[]> {
-    const response = await this.fetchImpl(this.url("/api/reservations"));
+    const response = await this.fetchImpl(this.url("/api/reservations"), {
+      credentials: "include",
+    });
     return (await readBody(response)) as EventRequest[];
   }
 
@@ -39,6 +41,7 @@ export class ApiReservationRepository implements ReservationRepository {
     const response = await this.fetchImpl(this.url("/api/reservations"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(input),
     });
     return (await readBody(response)) as EventRequest;
@@ -48,6 +51,7 @@ export class ApiReservationRepository implements ReservationRepository {
     const response = await this.fetchImpl(this.url(`/api/reservations/${encodeURIComponent(id)}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(input),
     });
     return (await readBody(response)) as EventRequest;

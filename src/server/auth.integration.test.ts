@@ -1,7 +1,7 @@
 import { beforeEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { ROLES } from "@/domain/auth";
-import { AuthApi, InvalidCredentialsError, UnauthorizedError } from "./auth.server";
+import { AuthApi, ForbiddenError, InvalidCredentialsError, UnauthorizedError } from "./auth.server";
 import { getDb } from "./firestore.server";
 import { SEED_ACCOUNTS } from "./seed-accounts";
 import { clearEmulator } from "./testing/emulator";
@@ -64,5 +64,16 @@ describe("AuthApi", () => {
       now: () => new Date("2026-11-17T18:00:02.000Z"),
     });
     await assert.rejects(() => later.requireSession(session.id), UnauthorizedError);
+  });
+
+  it("requireAdmin allows admins and rejects everyone else", async () => {
+    await assert.rejects(() => api.requireAdmin(null), UnauthorizedError);
+
+    const student = await api.signIn("student@cea.howard.edu", "student-demo");
+    await assert.rejects(() => api.requireAdmin(student.session.id), ForbiddenError);
+
+    const admin = await api.signIn("admin@cea.howard.edu", "admin-demo");
+    const allowed = await api.requireAdmin(admin.session.id);
+    assert.equal(allowed.user.role, "admin");
   });
 });

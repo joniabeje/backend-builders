@@ -6,7 +6,7 @@ import {
 } from "@/data/reservation-repository";
 import type { NewReservation } from "@/domain/reservation";
 import { ReviewFeedbackError, type ReviewInput } from "@/domain/review-decision";
-import { InvalidCredentialsError, UnauthorizedError } from "./auth.server";
+import { ForbiddenError, InvalidCredentialsError, UnauthorizedError } from "./auth.server";
 
 export function json(data: unknown, status = 200, init: ResponseInit = {}): Response {
   return Response.json(data, { ...init, status });
@@ -41,6 +41,9 @@ export function errorResponse(error: unknown): Response {
   }
   if (error instanceof InvalidCredentialsError || error instanceof UnauthorizedError) {
     return json({ error: error.message }, 401);
+  }
+  if (error instanceof ForbiddenError) {
+    return json({ error: error.message }, 403);
   }
   if (error instanceof TypeError) {
     return json({ error: error.message }, 400);
