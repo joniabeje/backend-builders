@@ -6,9 +6,7 @@ export function SiteFooter() {
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} CEA Reserve · Backend Builders · Howard University
           </p>
-          <p className="text-xs text-muted-foreground">
-            College of Engineering & Architecture
-          </p>
+          <p className="text-xs text-muted-foreground">College of Engineering & Architecture</p>
         </div>
       </div>
     </footer>

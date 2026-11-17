@@ -30,10 +30,18 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "CEA Reserve — Howard University Event Space Reservations" },
-      { name: "description", content: "Intelligent event space reservation and decision-support platform for the Howard University College of Engineering & Architecture." },
+      {
+        name: "description",
+        content:
+          "Intelligent event space reservation and decision-support platform for the Howard University College of Engineering & Architecture.",
+      },
       { name: "author", content: "Backend Builders" },
       { property: "og:title", content: "CEA Reserve — Howard University" },
-      { property: "og:description", content: "Smart, real-time event space reservations for the College of Engineering & Architecture." },
+      {
+        property: "og:description",
+        content:
+          "Smart, real-time event space reservations for the College of Engineering & Architecture.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -41,7 +49,10 @@ export const Route = createRootRoute({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,

@@ -126,7 +126,8 @@ The same diagram, plus the as-is layered view of the repository, the today-versu
 
 - React + TypeScript
 - Vite
-- Bun
+- npm (the only package manager; `package-lock.json` is the lockfile)
+- Vitest (unit tests) and Playwright (end-to-end tests)
 - Node.js or Flask (backend)
 - AWS (planned deployment)
 - ESLint + Prettier
@@ -174,21 +175,38 @@ src/
 ```bash
 git clone git@github.com:joniabeje/backend-builders.git
 cd backend-builders
-bun install
-```
-
-## Install dependencies
-
-```bash
-npm install
-npm run dev
+npm ci
 ```
 
 ## ▶️ Run Locally
 
 ```bash
-bun run dev
+npm run dev
 ```
+
+The app runs at http://localhost:8080.
+
+## 🧪 Testing
+
+| Command                 | What it runs                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `npm test`              | Vitest unit tests (`src/**/*.test.ts`), once                                                             |
+| `npm run test:watch`    | Vitest in watch mode                                                                                     |
+| `npm run test:coverage` | Unit tests with a coverage report for `src/domain`, `src/data` and `src/lib`; open `coverage/index.html` |
+| `npm run test:e2e`      | Playwright smoke tests in `e2e/` against a dev server on port 4173                                       |
+| `npm run typecheck`     | `tsc --noEmit`                                                                                           |
+| `npm run lint`          | ESLint and Prettier                                                                                      |
+
+Unit tests sit next to the code they test, for example `src/domain/risk.test.ts`. They cover the framework-free rules in `src/domain` and the repository in `src/data`. Vitest reads `vitest.config.ts`, not the Lovable `vite.config.ts`, so the tests don't load the app's build plugins.
+
+Before your first e2e run, download the browser once with `npx playwright install chromium`. Playwright starts its own dev server on port 4173, so a dev server you already have running on 8080 won't get in the way.
+
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `main`. It has two jobs:
+
+- **verify:** lint, typecheck, unit tests with coverage, then build.
+- **e2e:** the Playwright smoke tests.
+
+If any step fails, the PR check fails. The coverage report is attached to each run, and the Playwright report and traces are attached when e2e fails.
 
 ## 👥 Team
 
