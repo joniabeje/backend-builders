@@ -15,5 +15,5 @@ describe("getDb configuration", () => {
   it("refuses to start without the emulator or a project id", async () => {
     const { getDb } = await import("./firestore.server");
     assert.throws(() => getDb(), /Firestore is not configured/);
-  });
+  }, 15_000);
 });

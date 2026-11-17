@@ -46,8 +46,9 @@ async function submitRequest(page: Page, request: Request) {
   await expect(page.getByRole("heading", { name: "Request submitted!" })).toBeVisible();
 }
 
-// The in-memory repository lives for the browser session, so these tests move between
-// pages with in-app links. A full reload starts a fresh store until the API exists (#13).
+// Playwright sets VITE_USE_MOCKS=true, so the in-memory seed is used. Move between pages
+// with in-app links; a full reload starts a fresh store. Persistence across reload is
+// covered manually against the emulator (docs/ARCHITECTURE.md).
 test.describe("/reserve", () => {
   test("saves a valid request, shows its id, and lists it for requester and admin", async ({
     page,

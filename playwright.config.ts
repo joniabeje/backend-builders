@@ -23,9 +23,12 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
+    // Smoke tests still use the in-memory seed (#57). Persistence e2e against the
+    // emulator is a follow-up once auth and seeding are part of the default local loop.
     command: `npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !isCI,
     timeout: 120_000,
+    env: { ...process.env, VITE_USE_MOCKS: "true" },
   },
 });
