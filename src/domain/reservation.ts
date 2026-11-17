@@ -1,5 +1,6 @@
 // Core reservation types, shared by the data layer and the UI.
 // Kept free of mock data so a real API client can depend on them too.
+import type { RiskAssessment } from "./risk";
 
 export const REQUEST_STATUSES = ["pending", "approved", "needs-changes", "rejected"] as const;
 
@@ -29,6 +30,9 @@ export type StatusChange = {
  * `room` stores a stable ROOMS id (e.g. "atrium"), not a free-text label.
  * Display names come from getRoomDisplayName / getRoomById in rooms.ts.
  * `history` is oldest-first.
+ * `risk` is computed once from the stored fields when the reservation is saved (#5),
+ * so every page shows the same assessment. After-hours is part of it, derived from
+ * `startTime` and `endTime`.
  */
 export type EventRequest = {
   id: string;
@@ -43,8 +47,11 @@ export type EventRequest = {
   status: RequestStatus;
   hasFood: boolean;
   externalGuests: boolean;
-  afterHours: boolean;
   itNeeds: boolean;
   submittedAt: string;
   history: readonly StatusChange[];
+  risk: RiskAssessment;
 };
+
+/** A reservation before the store has scored it. Repositories add `risk` on save. */
+export type UnscoredEventRequest = Omit<EventRequest, "risk">;
