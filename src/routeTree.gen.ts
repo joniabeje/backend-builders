@@ -17,6 +17,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiRoomsRouteImport } from './routes/api/rooms'
 import { Route as ApiReservationsRouteImport } from './routes/api/reservations'
 import { Route as ApiReservationsIdRouteImport } from './routes/api/reservations.$id'
+import { Route as ApiAuthSignOutRouteImport } from './routes/api/auth/sign-out'
+import { Route as ApiAuthSignInRouteImport } from './routes/api/auth/sign-in'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 
 const RoomsRoute = RoomsRouteImport.update({
   id: '/rooms',
@@ -58,6 +61,21 @@ const ApiReservationsIdRoute = ApiReservationsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiReservationsRoute,
 } as any)
+const ApiAuthSignOutRoute = ApiAuthSignOutRouteImport.update({
+  id: '/api/auth/sign-out',
+  path: '/api/auth/sign-out',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSignInRoute = ApiAuthSignInRouteImport.update({
+  id: '/api/auth/sign-in',
+  path: '/api/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: '/api/auth/me',
+  path: '/api/auth/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +85,9 @@ export interface FileRoutesByFullPath {
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/sign-in': typeof ApiAuthSignInRoute
+  '/api/auth/sign-out': typeof ApiAuthSignOutRoute
   '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +98,9 @@ export interface FileRoutesByTo {
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/sign-in': typeof ApiAuthSignInRoute
+  '/api/auth/sign-out': typeof ApiAuthSignOutRoute
   '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRoutesById {
@@ -88,6 +112,9 @@ export interface FileRoutesById {
   '/rooms': typeof RoomsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/sign-in': typeof ApiAuthSignInRoute
+  '/api/auth/sign-out': typeof ApiAuthSignOutRoute
   '/api/reservations/$id': typeof ApiReservationsIdRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +127,9 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/api/reservations'
     | '/api/rooms'
+    | '/api/auth/me'
+    | '/api/auth/sign-in'
+    | '/api/auth/sign-out'
     | '/api/reservations/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +140,9 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/api/reservations'
     | '/api/rooms'
+    | '/api/auth/me'
+    | '/api/auth/sign-in'
+    | '/api/auth/sign-out'
     | '/api/reservations/$id'
   id:
     | '__root__'
@@ -120,6 +153,9 @@ export interface FileRouteTypes {
     | '/rooms'
     | '/api/reservations'
     | '/api/rooms'
+    | '/api/auth/me'
+    | '/api/auth/sign-in'
+    | '/api/auth/sign-out'
     | '/api/reservations/$id'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +167,9 @@ export interface RootRouteChildren {
   RoomsRoute: typeof RoomsRoute
   ApiReservationsRoute: typeof ApiReservationsRouteWithChildren
   ApiRoomsRoute: typeof ApiRoomsRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
+  ApiAuthSignInRoute: typeof ApiAuthSignInRoute
+  ApiAuthSignOutRoute: typeof ApiAuthSignOutRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -191,6 +230,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReservationsIdRouteImport
       parentRoute: typeof ApiReservationsRoute
     }
+    '/api/auth/sign-out': {
+      id: '/api/auth/sign-out'
+      path: '/api/auth/sign-out'
+      fullPath: '/api/auth/sign-out'
+      preLoaderRoute: typeof ApiAuthSignOutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/sign-in': {
+      id: '/api/auth/sign-in'
+      path: '/api/auth/sign-in'
+      fullPath: '/api/auth/sign-in'
+      preLoaderRoute: typeof ApiAuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -214,6 +274,9 @@ const rootRouteChildren: RootRouteChildren = {
   RoomsRoute: RoomsRoute,
   ApiReservationsRoute: ApiReservationsRouteWithChildren,
   ApiRoomsRoute: ApiRoomsRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
+  ApiAuthSignInRoute: ApiAuthSignInRoute,
+  ApiAuthSignOutRoute: ApiAuthSignOutRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -38,6 +38,7 @@ describe("seedDatabase", () => {
     const { reservations, history } = await readAll();
     assert.equal(reservations.size, MOCK_REQUESTS.length);
     assert.equal(history.size, counts.historyEntries);
+    assert.equal(counts.users, 4);
     assert.ok(counts.historyEntries > 0);
 
     for (const mock of MOCK_REQUESTS) {

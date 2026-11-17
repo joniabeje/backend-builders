@@ -9,7 +9,14 @@ const SPEC = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "openapi
 describe("docs/openapi.yaml", () => {
   it("documents every implemented /api route and the required error codes", () => {
     assert.match(SPEC, /^openapi:\s*3\.1\.0/m);
-    for (const path of ["/api/rooms", "/api/reservations", "/api/reservations/{id}"]) {
+    for (const path of [
+      "/api/rooms",
+      "/api/reservations",
+      "/api/reservations/{id}",
+      "/api/auth/sign-in",
+      "/api/auth/sign-out",
+      "/api/auth/me",
+    ]) {
       assert.match(SPEC, new RegExp(`^ {2}${path.replaceAll("/", "\\/")}:`, "m"), path);
     }
     for (const method of ["get:", "post:", "patch:"]) {
