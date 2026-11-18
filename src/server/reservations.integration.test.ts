@@ -98,6 +98,32 @@ describe("ReservationsApi", () => {
     );
   });
 
+  it("allows a booking that starts exactly when another ends", async () => {
+    await api.createReservation(VALID);
+    const next = await api.createReservation({
+      ...VALID,
+      title: "Back to back",
+      startTime: "15:00",
+      endTime: "16:00",
+    });
+    assert.equal(next.startTime, "15:00");
+    assert.equal((await api.listReservations()).length, 2);
+  });
+
+  it("only one of two parallel creates for the same slot succeeds (#65)", async () => {
+    const results = await Promise.allSettled([
+      api.createReservation(VALID),
+      api.createReservation({ ...VALID, title: "Parallel twin" }),
+    ]);
+    const fulfilled = results.filter((result) => result.status === "fulfilled");
+    const rejected = results.filter((result) => result.status === "rejected");
+    assert.equal(fulfilled.length, 1);
+    assert.equal(rejected.length, 1);
+    assert.ok(rejected[0].status === "rejected");
+    assert.ok(rejected[0].reason instanceof ReservationConflictError);
+    assert.equal((await api.listReservations()).length, 1);
+  });
+
   it("stores server-computed high risk on create", async () => {
     const created = await api.createReservation({
       ...VALID,

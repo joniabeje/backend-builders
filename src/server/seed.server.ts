@@ -6,7 +6,14 @@ import { withRisk } from "@/domain/risk";
 import { MOCK_REQUESTS } from "@/lib/mock-requests";
 import { ROOMS, type Room } from "@/lib/rooms";
 import { AuthApi } from "./auth.server";
-import { COLLECTIONS, toReservationDoc, toRoomDoc } from "./schema.server";
+import { highestReservationNumber } from "./reservations.server";
+import {
+  COLLECTIONS,
+  RESERVATION_COUNTER_ID,
+  toReservationDoc,
+  toRoomDoc,
+  type ReservationCounterDoc,
+} from "./schema.server";
 import { SEED_ACCOUNTS, type SeedAccount } from "./seed-accounts";
 
 export type SeedCounts = {
@@ -48,6 +55,12 @@ export async function seedDatabase(
       historyEntries += 1;
     });
   }
+
+  // Keep the transactional create counter aligned with seeded REQ-* ids (#65).
+  const counter: ReservationCounterDoc = {
+    lastNumber: highestReservationNumber(reservations),
+  };
+  batch.set(db.collection(COLLECTIONS.counters).doc(RESERVATION_COUNTER_ID), counter);
 
   await batch.commit();
   const users = accounts.length > 0 ? await new AuthApi(db).seedAccounts(accounts) : 0;

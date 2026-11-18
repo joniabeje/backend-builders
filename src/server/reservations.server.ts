@@ -15,13 +15,15 @@ import {
 } from "@/domain/reservation-validation";
 import { withRisk } from "@/domain/risk";
 import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
-import { findConflicts } from "@/domain/room-availability";
+import { findConflicts, type BookedSlot } from "@/domain/room-availability";
 import { getDb } from "./firestore.server";
 import {
   COLLECTIONS,
+  RESERVATION_COUNTER_ID,
   fromReservationDoc,
   toReservationDoc,
   type HistoryDoc,
+  type ReservationCounterDoc,
   type ReservationDoc,
   type RoomDoc,
 } from "./schema.server";
@@ -99,13 +101,15 @@ export class ReservationsApi {
    * Validates the body, rejects double bookings with 409, stores server-computed
    * risk, and never trusts id/status/risk/requester from the client. When `actor`
    * is set (signed-in create), stores `requesterId` so `requester=me` can find it (#36).
+   *
+   * Conflict check + insert run in one Firestore transaction with a REQ id counter
+   * so two parallel creates for the same slot cannot both succeed (#65).
    */
   async createReservation(
     input: NewReservation,
     actor?: { id: string; name: string } | null,
   ): Promise<EventRequest> {
     const rooms = await this.listRooms();
-    const existing = await this.listReservations();
     const form = toValidationForm(input);
     const validation = validateReservation(form, toRoomCapacities(rooms), []);
     if (!validation.canSubmit) {
@@ -114,31 +118,50 @@ export class ReservationsApi {
       );
     }
 
-    const conflicts = findConflicts(
-      {
-        roomId: input.room,
-        date: input.date,
-        startTime: input.startTime,
-        endTime: input.endTime,
-      },
-      existing,
-    );
-    if (conflicts.length > 0) throw new ReservationConflictError(conflicts);
-
-    const reservation = withRisk({
-      ...input,
-      id: nextReservationId(existing),
-      requester: actor?.name ?? this.requester,
-      status: "pending" as const,
-      submittedAt: this.now().toISOString().slice(0, 10),
-      history: [],
-    });
-
-    await this.db
+    const slot = {
+      roomId: input.room,
+      date: input.date,
+      startTime: input.startTime,
+      endTime: input.endTime,
+    };
+    const counterRef = this.db.collection(COLLECTIONS.counters).doc(RESERVATION_COUNTER_ID);
+    const sameSlotQuery = this.db
       .collection(COLLECTIONS.reservations)
-      .doc(reservation.id)
-      .set(toReservationDoc(reservation, actor?.id ?? null));
-    return reservation;
+      .where("room", "==", input.room)
+      .where("date", "==", input.date);
+
+    return this.db.runTransaction(async (tx) => {
+      const [slotSnap, counterSnap] = await Promise.all([
+        tx.get(sameSlotQuery),
+        tx.get(counterRef),
+      ]);
+
+      const existing = slotSnap.docs.map((doc) =>
+        toBookedSlot(doc.id, doc.data() as ReservationDoc),
+      );
+      const conflicts = findConflicts(slot, existing);
+      if (conflicts.length > 0) throw new ReservationConflictError(conflicts);
+
+      const lastNumber = counterSnap.exists
+        ? ((counterSnap.data() as ReservationCounterDoc).lastNumber ?? 1000)
+        : 1000;
+      const nextNumber = lastNumber + 1;
+      const reservation = withRisk({
+        ...input,
+        id: `REQ-${nextNumber}`,
+        requester: actor?.name ?? this.requester,
+        status: "pending" as const,
+        submittedAt: this.now().toISOString().slice(0, 10),
+        history: [],
+      });
+
+      tx.set(counterRef, { lastNumber: nextNumber } satisfies ReservationCounterDoc);
+      tx.set(
+        this.db.collection(COLLECTIONS.reservations).doc(reservation.id),
+        toReservationDoc(reservation, actor?.id ?? null),
+      );
+      return reservation;
+    });
   }
 
   /** Approve / request changes / reject: updates status and appends history (#85 shape). */
@@ -210,12 +233,28 @@ function toRoomCapacities(rooms: readonly RoomRecord[]): RoomCapacity[] {
   }));
 }
 
-/** "REQ-<n>", one above the highest numbered id already stored. */
+/** "REQ-<n>", one above the highest numbered id already stored. Used by seed / tests. */
 export function nextReservationId(existing: readonly Pick<EventRequest, "id">[]): string {
+  return `REQ-${highestReservationNumber(existing) + 1}`;
+}
+
+/** Highest REQ-<n> among ids, or 1000 when none exist (matches the create counter). */
+export function highestReservationNumber(existing: readonly Pick<EventRequest, "id">[]): number {
   let highest = 1000;
   for (const reservation of existing) {
     const match = ID_PATTERN.exec(reservation.id);
     if (match) highest = Math.max(highest, Number(match[1]));
   }
-  return `REQ-${highest + 1}`;
+  return highest;
+}
+
+function toBookedSlot(id: string, doc: ReservationDoc): BookedSlot {
+  return {
+    id,
+    room: doc.room,
+    date: doc.date,
+    startTime: doc.startTime,
+    endTime: doc.endTime,
+    status: doc.status,
+  };
 }
