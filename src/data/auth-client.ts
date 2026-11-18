@@ -1,6 +1,9 @@
 // Browser helpers for the login form (#61). Always sends credentials so the
-// HttpOnly cea_session cookie is stored and sent.
+// HttpOnly cea_session cookie is stored and sent. Under VITE_USE_MOCKS the
+// client checks seeded demo accounts locally so Playwright can sign in without
+// Firestore (#90).
 import type { PublicUser } from "@/domain/auth";
+import { mockSignIn } from "./mock-sign-in";
 
 export class AuthClientError extends Error {
   readonly status: number;
@@ -13,6 +16,12 @@ export class AuthClientError extends Error {
 }
 
 export async function signIn(email: string, password: string): Promise<PublicUser> {
+  if (import.meta.env.VITE_USE_MOCKS === "true") {
+    const user = mockSignIn(email, password);
+    if (!user) throw new AuthClientError("Invalid email or password.", 401);
+    return user;
+  }
+
   const response = await fetch("/api/auth/sign-in", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,5 +39,6 @@ export async function signIn(email: string, password: string): Promise<PublicUse
 }
 
 export async function signOut(): Promise<void> {
+  if (import.meta.env.VITE_USE_MOCKS === "true") return;
   await fetch("/api/auth/sign-out", { method: "POST", credentials: "include" });
 }
