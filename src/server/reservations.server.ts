@@ -24,6 +24,7 @@ import {
   securityNotificationDetails,
   shouldNotifySecurityOnApprove,
 } from "@/domain/security-notification";
+import { aggregateRoomUsage, type RoomUsageReport } from "@/domain/room-usage";
 import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
 import { findConflicts, type BookedSlot } from "@/domain/room-availability";
 import { getRoomDisplayName } from "@/lib/rooms";
@@ -273,6 +274,22 @@ export class ReservationsApi {
     }
 
     return updated;
+  }
+
+  /**
+   * Booking counts and approved hours per room per month, plus status totals,
+   * for an inclusive event-date range (#51). Uses the same from/to rules as list.
+   */
+  async roomUsage(from: string, to: string): Promise<RoomUsageReport> {
+    const [rooms, reservations] = await Promise.all([
+      this.listRooms(),
+      this.listReservations({ from, to }),
+    ]);
+    return aggregateRoomUsage(
+      reservations,
+      { from, to },
+      rooms.map((room) => room.id),
+    );
   }
 
   private async hydrate(id: string, doc: ReservationDoc): Promise<EventRequest> {

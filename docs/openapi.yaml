@@ -21,6 +21,7 @@ servers:
 tags:
   - name: rooms
   - name: reservations
+  - name: analytics
   - name: auth
 
 paths:
@@ -127,6 +128,46 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Room"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/analytics/rooms:
+    get:
+      tags: [analytics]
+      summary: Room usage by month
+      description: |
+        Admin-only. Booking counts and approved hours per room per month for an
+        inclusive event-date range, plus status totals across that range (#51).
+        Requires an admin `cea_session` cookie (**401** signed out, **403** non-admin).
+      operationId: getRoomUsage
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Inclusive lower bound on event `date` (`YYYY-MM-DD`).
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          description: Inclusive upper bound on event `date` (`YYYY-MM-DD`).
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Usage report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomUsageReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -369,6 +410,65 @@ components:
           type: string
           format: date-time
           description: ISO-8601 timestamp.
+
+    RoomUsageMonth:
+      type: object
+      additionalProperties: false
+      required: [month, bookings, approvedHours]
+      properties:
+        month:
+          type: string
+          description: Event-date month (`YYYY-MM`).
+          example: "2026-09"
+        bookings:
+          type: integer
+          minimum: 0
+          description: Reservations in this room/month (every status).
+        approvedHours:
+          type: number
+          minimum: 0
+          description: Sum of approved booking durations in hours.
+
+    RoomUsageRow:
+      type: object
+      additionalProperties: false
+      required: [roomId, months]
+      properties:
+        roomId:
+          type: string
+        months:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomUsageMonth"
+
+    RoomUsageReport:
+      type: object
+      additionalProperties: false
+      required: [from, to, byStatus, rooms]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        byStatus:
+          type: object
+          additionalProperties: false
+          required: [pending, approved, needs-changes, rejected]
+          properties:
+            pending:
+              type: integer
+            approved:
+              type: integer
+            needs-changes:
+              type: integer
+            rejected:
+              type: integer
+        rooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomUsageRow"
 
     Room:
       type: object
