@@ -69,11 +69,23 @@ export class ReservationsApi {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async listReservations(): Promise<EventRequest[]> {
-    const snapshot = await this.db.collection(COLLECTIONS.reservations).get();
+  /**
+   * All reservations, or only those for `requesterId` ("my requests" / #36). Newest
+   * `submittedAt` first. The requesterId filter uses the composite index in
+   * firestore.indexes.json.
+   */
+  async listReservations(filter?: { requesterId?: string }): Promise<EventRequest[]> {
+    const collection = this.db.collection(COLLECTIONS.reservations);
+    const snapshot = filter?.requesterId
+      ? await collection
+          .where("requesterId", "==", filter.requesterId)
+          .orderBy("submittedAt", "desc")
+          .get()
+      : await collection.get();
     const reservations = await Promise.all(
       snapshot.docs.map((doc) => this.hydrate(doc.id, doc.data() as ReservationDoc)),
     );
+    if (filter?.requesterId) return reservations;
     return reservations.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   }
 
@@ -85,9 +97,13 @@ export class ReservationsApi {
 
   /**
    * Validates the body, rejects double bookings with 409, stores server-computed
-   * risk, and never trusts id/status/risk/requester from the client.
+   * risk, and never trusts id/status/risk/requester from the client. When `actor`
+   * is set (signed-in create), stores `requesterId` so `requester=me` can find it (#36).
    */
-  async createReservation(input: NewReservation): Promise<EventRequest> {
+  async createReservation(
+    input: NewReservation,
+    actor?: { id: string; name: string } | null,
+  ): Promise<EventRequest> {
     const rooms = await this.listRooms();
     const existing = await this.listReservations();
     const form = toValidationForm(input);
@@ -112,7 +128,7 @@ export class ReservationsApi {
     const reservation = withRisk({
       ...input,
       id: nextReservationId(existing),
-      requester: this.requester,
+      requester: actor?.name ?? this.requester,
       status: "pending" as const,
       submittedAt: this.now().toISOString().slice(0, 10),
       history: [],
@@ -121,7 +137,7 @@ export class ReservationsApi {
     await this.db
       .collection(COLLECTIONS.reservations)
       .doc(reservation.id)
-      .set(toReservationDoc(reservation));
+      .set(toReservationDoc(reservation, actor?.id ?? null));
     return reservation;
   }
 
@@ -135,13 +151,15 @@ export class ReservationsApi {
     const snapshot = await ref.get();
     if (!snapshot.exists) throw new ReservationNotFoundError(id);
 
-    const existing = await this.hydrate(id, snapshot.data() as ReservationDoc);
+    const existingDoc = snapshot.data() as ReservationDoc;
+    const existing = await this.hydrate(id, existingDoc);
     const updated = applyReviewDecision(existing, input, this.reviewer, this.now().toISOString());
     const newEntry = updated.history[updated.history.length - 1];
     const historyId = String(updated.history.length - 1).padStart(4, "0");
 
     const batch = this.db.batch();
-    batch.set(ref, toReservationDoc(updated));
+    // Keep requesterId so requester=me still finds the row after a review (#36).
+    batch.set(ref, toReservationDoc(updated, existingDoc.requesterId));
     batch.set(ref.collection(COLLECTIONS.history).doc(historyId), newEntry);
     await batch.commit();
     return updated;

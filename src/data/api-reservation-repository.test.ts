@@ -68,6 +68,18 @@ describe("ApiReservationRepository", () => {
     assert.deepEqual(calls, ["/api/reservations"]);
   });
 
+  it("lists my reservations from GET /api/reservations?requester=me", async () => {
+    const calls: string[] = [];
+    const repository = new ApiReservationRepository({
+      fetch: async (input) => {
+        calls.push(String(input));
+        return jsonResponse([SAMPLE]);
+      },
+    });
+    assert.deepEqual(await repository.listMine(), [SAMPLE]);
+    assert.deepEqual(calls, ["/api/reservations?requester=me"]);
+  });
+
   it("creates with POST and returns the server record", async () => {
     let body = "";
     const repository = new ApiReservationRepository({

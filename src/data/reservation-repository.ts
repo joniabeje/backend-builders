@@ -11,6 +11,11 @@ import type { BookedSlot } from "@/domain/room-availability";
 export interface ReservationRepository {
   list(): Promise<EventRequest[]>;
   /**
+   * Reservations for the signed-in user (`GET /reservations?requester=me`, #36).
+   * The in-memory mock returns the full list so Playwright keeps working without accounts.
+   */
+  listMine(): Promise<EventRequest[]>;
+  /**
    * Saves a new request (#2). The store assigns the id, requester, "pending" status,
    * submittedAt and an empty history, and computes risk (#5); none of these come from
    * the client. Rejects with ReservationConflictError if the room is already booked.

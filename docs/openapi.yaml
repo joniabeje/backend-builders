@@ -134,8 +134,19 @@ paths:
     get:
       tags: [reservations]
       summary: List reservations
-      description: All reservations, newest `submittedAt` first, each with history and risk.
+      description: |
+        All reservations, newest `submittedAt` first, each with history and risk.
+        Pass `requester=me` to return only the signed-in user's rows (**401** when
+        signed out). Used by `/dashboard` (#36).
       operationId: listReservations
+      parameters:
+        - name: requester
+          in: query
+          required: false
+          description: Set to `me` to scope the list to the current session user.
+          schema:
+            type: string
+            enum: [me]
       responses:
         "200":
           description: Reservation list.
@@ -145,6 +156,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Reservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -154,7 +169,9 @@ paths:
       description: |
         Accepts only `NewReservation` fields. The server assigns `id`, `requester`,
         `status` (`pending`), `submittedAt`, empty `history`, and computes `risk`.
-        Client-supplied `id`, `status`, `risk`, or `requester` are ignored.
+        When a session cookie is present, `requester` / `requesterId` come from that
+        user so `requester=me` can find the row (#36). Client-supplied `id`, `status`,
+        `risk`, or `requester` are ignored.
 
         Runs `validateReservation` then `findConflicts`. Field errors → `400`.
         Double booking → `409`.
