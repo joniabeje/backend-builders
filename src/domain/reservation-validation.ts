@@ -5,7 +5,7 @@
 // against rooms loaded from the API instead of `src/lib/rooms.ts`.
 import type { Room } from "@/lib/rooms";
 import { isAfterHours, scoreRisk, type RiskAssessment, type RiskFactorCode } from "./risk";
-import { describeConflicts, findConflicts, type BookedSlot } from "./room-availability";
+import { findConflicts, roomConflictMessage, type BookedSlot } from "./room-availability";
 import { parseTimeOfDay } from "./time-of-day";
 
 export { isAfterHours, parseTimeOfDay };
@@ -259,7 +259,7 @@ function conflictIssues(
     {
       code: "room-conflict",
       severity: "error",
-      message: `${roomName} is already booked on ${form.date} at ${describeConflicts(conflicts)}. Choose another room or time.`,
+      message: roomConflictMessage(roomName, form.date, conflicts),
     },
   ];
 }
