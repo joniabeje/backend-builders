@@ -3,7 +3,7 @@ import { adminAccess } from "./admin-access";
 import type { PublicUser } from "./auth";
 
 export type SiteNavLink = {
-  readonly to: "/" | "/rooms" | "/dashboard" | "/admin";
+  readonly to: "/" | "/rooms" | "/dashboard" | "/admin" | "/admin/analytics";
   readonly label: string;
 };
 
@@ -14,13 +14,16 @@ const PUBLIC_LINKS: readonly SiteNavLink[] = [
 
 const MY_REQUESTS_LINK: SiteNavLink = { to: "/dashboard", label: "My Requests" };
 const ADMIN_LINK: SiteNavLink = { to: "/admin", label: "Admin" };
+const ANALYTICS_LINK: SiteNavLink = { to: "/admin/analytics", label: "Analytics" };
 
 /**
  * Home / Rooms for everyone. My Requests only when signed in (#38).
- * Admin only when `adminAccess` is ok (#89).
+ * Admin + Analytics only when `adminAccess` is ok (#89 / #52).
  */
 export function siteNavLinks(user: PublicUser | null): readonly SiteNavLink[] {
   if (!user) return PUBLIC_LINKS;
-  if (adminAccess(user) === "ok") return [...PUBLIC_LINKS, MY_REQUESTS_LINK, ADMIN_LINK];
+  if (adminAccess(user) === "ok") {
+    return [...PUBLIC_LINKS, MY_REQUESTS_LINK, ADMIN_LINK, ANALYTICS_LINK];
+  }
   return [...PUBLIC_LINKS, MY_REQUESTS_LINK];
 }

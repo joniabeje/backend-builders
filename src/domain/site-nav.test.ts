@@ -23,7 +23,7 @@ describe("siteNavLinks", () => {
     assert.deepEqual(labels(user("facilities")), ["Home", "Rooms", "My Requests"]);
   });
 
-  it("shows Admin only for the admin role", () => {
-    assert.deepEqual(labels(user("admin")), ["Home", "Rooms", "My Requests", "Admin"]);
+  it("shows Admin and Analytics only for the admin role", () => {
+    assert.deepEqual(labels(user("admin")), ["Home", "Rooms", "My Requests", "Admin", "Analytics"]);
   });
 });
