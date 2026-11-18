@@ -25,7 +25,7 @@ const WITH_IT: NewReservation = {
   itNeeds: true,
 };
 
-describe("IT notify on approve (#42)", () => {
+describe("IT notify on approve (#42, #43)", () => {
   let reservations: ReservationsApi;
   let notifications: NotificationsApi;
 
