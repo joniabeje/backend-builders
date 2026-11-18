@@ -222,7 +222,7 @@ describe("InMemoryReservationRepository.create", () => {
     );
   });
 
-  it("rejects a double booking and saves nothing", async () => {
+  it("rejects a double booking and saves nothing (#67)", async () => {
     const existing = {
       ...reservation("REQ-1040"),
       room: NEW.room,
@@ -241,6 +241,24 @@ describe("InMemoryReservationRepository.create", () => {
       return true;
     });
     assert.equal((await repository.list()).length, 1);
+  });
+
+  it("allows a booking that starts exactly when another ends (#67)", async () => {
+    const existing = {
+      ...reservation("REQ-1040"),
+      room: NEW.room,
+      date: NEW.date,
+      startTime: "10:00",
+      endTime: "11:00",
+    };
+    const repository = new InMemoryReservationRepository([existing]);
+    const created = await repository.create({
+      ...NEW,
+      startTime: "11:00",
+      endTime: "12:00",
+    });
+    assert.equal(created.startTime, "11:00");
+    assert.equal((await repository.list()).length, 2);
   });
 
   it("allows the slot once the overlapping request is rejected", async () => {
