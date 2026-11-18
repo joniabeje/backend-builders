@@ -1,6 +1,6 @@
 // Firestore-backed reservation and room reads/writes for the HTTP API (#55).
 // Pages still use the in-memory repository until #57 switches them over.
-import type { Firestore } from "firebase-admin/firestore";
+import type { Firestore, Query } from "firebase-admin/firestore";
 import { UNVERIFIED_REQUESTER } from "@/data/in-memory-reservation-repository";
 import {
   ReservationConflictError,
@@ -41,6 +41,24 @@ import {
 } from "./schema.server";
 
 export type RoomRecord = RoomDoc & { id: string };
+
+/** Filters for `listReservations` (#36 requester, #50 event-date range). */
+export type ListReservationsFilter = {
+  requesterId?: string;
+  /** Inclusive event-date lower bound (`YYYY-MM-DD`). */
+  from?: string;
+  /** Inclusive event-date upper bound (`YYYY-MM-DD`). */
+  to?: string;
+};
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function requireIsoDate(value: string, name: "from" | "to"): string {
+  if (!ISO_DATE.test(value)) {
+    throw new TypeError(`Query parameter "${name}" must be YYYY-MM-DD.`);
+  }
+  return value;
+}
 
 export type ReservationsApiOptions = {
   /** Actor recorded on review until real accounts exist (#14 / #86). */
@@ -89,22 +107,45 @@ export class ReservationsApi {
   }
 
   /**
-   * All reservations, or only those for `requesterId` ("my requests" / #36). Newest
-   * `submittedAt` first. The requesterId filter uses the composite index in
-   * firestore.indexes.json.
+   * All reservations (every status — nothing is hard-deleted), optionally scoped
+   * by `requesterId` (#36) and/or inclusive event-date `from`/`to` (#50). Newest
+   * `submittedAt` first unless a date range is used (then newest event `date` first).
+   * The requesterId filter uses the composite index in firestore.indexes.json.
    */
-  async listReservations(filter?: { requesterId?: string }): Promise<EventRequest[]> {
+  async listReservations(filter: ListReservationsFilter = {}): Promise<EventRequest[]> {
+    const from = filter.from !== undefined ? requireIsoDate(filter.from, "from") : undefined;
+    const to = filter.to !== undefined ? requireIsoDate(filter.to, "to") : undefined;
+    if (from && to && from > to) {
+      throw new TypeError('Query parameter "from" must be on or before "to".');
+    }
+
     const collection = this.db.collection(COLLECTIONS.reservations);
-    const snapshot = filter?.requesterId
-      ? await collection
-          .where("requesterId", "==", filter.requesterId)
-          .orderBy("submittedAt", "desc")
-          .get()
-      : await collection.get();
-    const reservations = await Promise.all(
+    let snapshot;
+    if (filter.requesterId) {
+      snapshot = await collection
+        .where("requesterId", "==", filter.requesterId)
+        .orderBy("submittedAt", "desc")
+        .get();
+    } else if (from || to) {
+      let query: Query = collection;
+      if (from) query = query.where("date", ">=", from);
+      if (to) query = query.where("date", "<=", to);
+      snapshot = await query.orderBy("date", "desc").get();
+    } else {
+      snapshot = await collection.get();
+    }
+
+    let reservations = await Promise.all(
       snapshot.docs.map((doc) => this.hydrate(doc.id, doc.data() as ReservationDoc)),
     );
-    if (filter?.requesterId) return reservations;
+    if (filter.requesterId && (from || to)) {
+      reservations = reservations.filter((row) => {
+        if (from && row.date < from) return false;
+        if (to && row.date > to) return false;
+        return true;
+      });
+    }
+    if (filter.requesterId || from || to) return reservations;
     return reservations.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   }
 
