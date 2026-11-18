@@ -13,10 +13,13 @@ import {
   type ReservationForm,
   type RoomCapacity,
 } from "@/domain/reservation-validation";
+import { itNotificationDetails, shouldNotifyItOnApprove } from "@/domain/it-notification";
 import { withRisk } from "@/domain/risk";
 import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
 import { findConflicts, type BookedSlot } from "@/domain/room-availability";
+import { getRoomDisplayName } from "@/lib/rooms";
 import { getDb } from "./firestore.server";
+import { NotificationsApi } from "./notifications.server";
 import {
   COLLECTIONS,
   RESERVATION_COUNTER_ID,
@@ -36,6 +39,8 @@ export type ReservationsApiOptions = {
   /** Display name on new requests until sign-in exists (#14). */
   requester?: string;
   now?: () => Date;
+  /** Used to notify IT when an itNeeds request is approved (#42). */
+  notifications?: NotificationsApi;
 };
 
 const ID_PATTERN = /^REQ-(\d+)$/;
@@ -49,6 +54,7 @@ export class ReservationsApi {
   private readonly reviewer: string;
   private readonly requester: string;
   private readonly now: () => Date;
+  private readonly notifications: NotificationsApi;
 
   constructor(
     db: Firestore = getDb(),
@@ -56,12 +62,14 @@ export class ReservationsApi {
       reviewer = "Dean's Office",
       requester = UNVERIFIED_REQUESTER,
       now = () => new Date(),
+      notifications,
     }: ReservationsApiOptions = {},
   ) {
     this.db = db;
     this.reviewer = reviewer;
     this.requester = requester;
     this.now = now;
+    this.notifications = notifications ?? new NotificationsApi(db, { now });
   }
 
   async listRooms(): Promise<RoomRecord[]> {
@@ -185,6 +193,15 @@ export class ReservationsApi {
     batch.set(ref, toReservationDoc(updated, existingDoc.requesterId));
     batch.set(ref.collection(COLLECTIONS.history).doc(historyId), newEntry);
     await batch.commit();
+
+    if (shouldNotifyItOnApprove(updated, input.decision)) {
+      await this.notifications.notify(
+        "it",
+        updated,
+        itNotificationDetails(updated, getRoomDisplayName(updated.room)),
+      );
+    }
+
     return updated;
   }
 
