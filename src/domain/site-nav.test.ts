@@ -13,8 +13,11 @@ const user = (role: PublicUser["role"]): PublicUser => ({
 const labels = (role: PublicUser | null) => siteNavLinks(role).map((link) => link.label);
 
 describe("siteNavLinks", () => {
-  it("hides Admin for signed-out visitors and non-admin roles", () => {
-    assert.deepEqual(labels(null), ["Home", "Rooms", "My Requests"]);
+  it("hides My Requests and Admin for signed-out visitors", () => {
+    assert.deepEqual(labels(null), ["Home", "Rooms"]);
+  });
+
+  it("shows My Requests to any signed-in role", () => {
     assert.deepEqual(labels(user("student")), ["Home", "Rooms", "My Requests"]);
     assert.deepEqual(labels(user("advisor")), ["Home", "Rooms", "My Requests"]);
     assert.deepEqual(labels(user("facilities")), ["Home", "Rooms", "My Requests"]);
