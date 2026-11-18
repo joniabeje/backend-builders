@@ -77,7 +77,7 @@ describe("ReservationsApi", () => {
     assert.equal((await api.listReservations()).length, 0);
   });
 
-  it("rejects a double booking with the conflicting ids", async () => {
+  it("rejects a double booking with the conflicting ids (#67)", async () => {
     const first = await api.createReservation(VALID);
     await assert.rejects(
       () =>
@@ -98,7 +98,7 @@ describe("ReservationsApi", () => {
     );
   });
 
-  it("allows a booking that starts exactly when another ends", async () => {
+  it("allows a booking that starts exactly when another ends (#67)", async () => {
     await api.createReservation(VALID);
     const next = await api.createReservation({
       ...VALID,
