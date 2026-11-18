@@ -20,6 +20,10 @@ import {
 } from "@/domain/custodial-notification";
 import { itNotificationDetails, shouldNotifyItOnApprove } from "@/domain/it-notification";
 import { withRisk } from "@/domain/risk";
+import {
+  securityNotificationDetails,
+  shouldNotifySecurityOnApprove,
+} from "@/domain/security-notification";
 import { applyReviewDecision, isReviewDecision, type ReviewInput } from "@/domain/review-decision";
 import { findConflicts, type BookedSlot } from "@/domain/room-availability";
 import { getRoomDisplayName } from "@/lib/rooms";
@@ -44,7 +48,7 @@ export type ReservationsApiOptions = {
   /** Display name on new requests until sign-in exists (#14). */
   requester?: string;
   now?: () => Date;
-  /** Used to notify IT / custodial when an approved request qualifies (#42, #44). */
+  /** Used to notify IT / custodial / security when an approved request qualifies (#42, #44, #47). */
   notifications?: NotificationsApi;
 };
 
@@ -217,6 +221,14 @@ export class ReservationsApi {
           { variant: phase },
         );
       }
+    }
+
+    if (shouldNotifySecurityOnApprove(updated, input.decision)) {
+      await this.notifications.notify(
+        "security",
+        updated,
+        securityNotificationDetails(updated, getRoomDisplayName(updated.room)),
+      );
     }
 
     return updated;
