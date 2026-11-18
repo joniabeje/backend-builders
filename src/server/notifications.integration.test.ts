@@ -72,4 +72,32 @@ describe("NotificationsApi (#40, #41)", () => {
     assert.equal((await api.listByService("custodial")).length, 1);
     assert.equal(delivery.delivered.length, 2);
   });
+
+  it("keeps separate rows for variants of the same service (#45)", async () => {
+    const setup = await api.notify(
+      "custodial",
+      RESERVATION,
+      { ...DETAILS, phase: "setup" },
+      { variant: "setup" },
+    );
+    const cleanup = await api.notify(
+      "custodial",
+      RESERVATION,
+      { ...DETAILS, phase: "cleanup" },
+      { variant: "cleanup" },
+    );
+    assert.equal(setup.id, notificationId(RESERVATION.id, "custodial", "setup"));
+    assert.equal(cleanup.id, notificationId(RESERVATION.id, "custodial", "cleanup"));
+    assert.equal((await api.listByService("custodial")).length, 2);
+    assert.equal(delivery.delivered.length, 2);
+
+    const again = await api.notify(
+      "custodial",
+      RESERVATION,
+      { ...DETAILS, phase: "setup", note: "re-notify" },
+      { variant: "setup" },
+    );
+    assert.deepEqual(again, setup);
+    assert.equal(delivery.delivered.length, 2);
+  });
 });

@@ -1,6 +1,7 @@
-// Approving a food or large-attendance request creates one custodial notification (#44).
+// Qualifying approvals create exactly one pre and one post custodial notification (#44, #45).
 import { beforeEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { notificationId } from "@/domain/notifications";
 import { RISK_POLICY } from "@/domain/risk";
 import type { NewReservation } from "@/domain/reservation";
 import { getDb } from "./firestore.server";
@@ -26,7 +27,7 @@ const WITH_FOOD: NewReservation = {
   itNeeds: false,
 };
 
-describe("custodial notify on approve (#44)", () => {
+describe("custodial notify on approve (#44, #45)", () => {
   let reservations: ReservationsApi;
   let notifications: NotificationsApi;
 
@@ -43,7 +44,7 @@ describe("custodial notify on approve (#44)", () => {
     });
   });
 
-  it("creates one custodial notification for food with date, time, room, attendance", async () => {
+  it("creates one setup and one cleanup notification for food", async () => {
     const created = await reservations.createReservation(WITH_FOOD);
     await reservations.reviewReservation(created.id, {
       decision: "approved",
@@ -51,17 +52,29 @@ describe("custodial notify on approve (#44)", () => {
     });
 
     const listed = await notifications.listByService("custodial");
-    assert.equal(listed.length, 1);
-    assert.equal(listed[0]?.reservationId, created.id);
-    assert.equal(listed[0]?.details.date, WITH_FOOD.date);
-    assert.equal(listed[0]?.details.startTime, WITH_FOOD.startTime);
-    assert.equal(listed[0]?.details.endTime, WITH_FOOD.endTime);
-    assert.equal(listed[0]?.details.room, "Seminar Room 201");
-    assert.equal(listed[0]?.details.attendance, String(WITH_FOOD.attendance));
-    assert.equal(listed[0]?.details.reason, "Food service");
+    assert.equal(listed.length, 2);
+    const byId = new Map(listed.map((row) => [row.id, row]));
+    const setup = byId.get(notificationId(created.id, "custodial", "setup"));
+    const cleanup = byId.get(notificationId(created.id, "custodial", "cleanup"));
+    assert.ok(setup);
+    assert.ok(cleanup);
+
+    for (const row of [setup, cleanup]) {
+      assert.equal(row.reservationId, created.id);
+      assert.equal(row.details.date, WITH_FOOD.date);
+      assert.equal(row.details.startTime, WITH_FOOD.startTime);
+      assert.equal(row.details.endTime, WITH_FOOD.endTime);
+      assert.equal(row.details.room, "Seminar Room 201");
+      assert.equal(row.details.attendance, String(WITH_FOOD.attendance));
+      assert.equal(row.details.reason, "Food service");
+    }
+    assert.equal(setup.details.phase, "setup");
+    assert.equal(setup.details.task, "Pre-event setup");
+    assert.equal(cleanup.details.phase, "cleanup");
+    assert.equal(cleanup.details.task, "Post-event cleaning");
   });
 
-  it("creates one custodial notification for large attendance without food", async () => {
+  it("creates setup and cleanup for large attendance without food", async () => {
     const created = await reservations.createReservation({
       ...WITH_FOOD,
       title: "Town Hall",
@@ -76,10 +89,17 @@ describe("custodial notify on approve (#44)", () => {
     });
 
     const listed = await notifications.listByService("custodial");
-    assert.equal(listed.length, 1);
-    assert.equal(listed[0]?.details.room, "Downing Hall Auditorium");
-    assert.equal(listed[0]?.details.attendance, String(RISK_POLICY.largeAttendance));
-    assert.equal(listed[0]?.details.reason, `Large attendance (${RISK_POLICY.largeAttendance}+)`);
+    assert.equal(listed.length, 2);
+    assert.ok(listed.every((row) => row.details.room === "Downing Hall Auditorium"));
+    assert.ok(
+      listed.every((row) => row.details.attendance === String(RISK_POLICY.largeAttendance)),
+    );
+    assert.ok(
+      listed.every(
+        (row) => row.details.reason === `Large attendance (${RISK_POLICY.largeAttendance}+)`,
+      ),
+    );
+    assert.deepEqual(listed.map((row) => row.details.phase).sort(), ["cleanup", "setup"]);
   });
 
   it("does not notify when the request is non-qualifying or not approved", async () => {
@@ -103,13 +123,15 @@ describe("custodial notify on approve (#44)", () => {
     assert.equal((await notifications.listByService("custodial")).length, 0);
   });
 
-  it("stays at one custodial notification if the request is approved again", async () => {
+  it("stays at one setup and one cleanup if the request is approved again", async () => {
     const created = await reservations.createReservation(WITH_FOOD);
     await reservations.reviewReservation(created.id, { decision: "approved", feedback: "" });
     await reservations.reviewReservation(created.id, {
       decision: "approved",
       feedback: "Re-confirmed.",
     });
-    assert.equal((await notifications.listByService("custodial")).length, 1);
+    const listed = await notifications.listByService("custodial");
+    assert.equal(listed.length, 2);
+    assert.deepEqual(listed.map((row) => row.details.phase).sort(), ["cleanup", "setup"]);
   });
 });

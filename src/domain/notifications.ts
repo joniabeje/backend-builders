@@ -9,9 +9,17 @@ export function isNotificationService(value: unknown): value is NotificationServ
   return typeof value === "string" && (NOTIFICATION_SERVICES as readonly string[]).includes(value);
 }
 
-/** Stable Firestore document id: one row per reservation per service (#40). */
-export function notificationId(reservationId: string, service: NotificationService): string {
-  return `${reservationId}_${service}`;
+/**
+ * Stable Firestore document id: one row per reservation per service (#40).
+ * Optional `variant` (e.g. custodial `setup` / `cleanup`) keeps multiple rows
+ * for the same service without colliding (#45).
+ */
+export function notificationId(
+  reservationId: string,
+  service: NotificationService,
+  variant?: string,
+): string {
+  return variant ? `${reservationId}_${service}_${variant}` : `${reservationId}_${service}`;
 }
 
 /**

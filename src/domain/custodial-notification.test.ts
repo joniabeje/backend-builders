@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
+  CUSTODIAL_PHASES,
   custodialNotificationDetails,
   custodialNotifyReasons,
   shouldNotifyCustodialOnApprove,
@@ -9,7 +10,7 @@ import { notificationId, type ServiceNotification } from "./notifications";
 import type { ReviewDecision } from "./review-decision";
 import { RISK_POLICY } from "./risk";
 
-describe("shouldNotifyCustodialOnApprove (#44)", () => {
+describe("shouldNotifyCustodialOnApprove (#44, #46)", () => {
   const decisions: ReviewDecision[] = ["approved", "needs-changes", "rejected"];
 
   it("notifies only when approved and (hasFood or large attendance)", () => {
@@ -33,7 +34,7 @@ describe("shouldNotifyCustodialOnApprove (#44)", () => {
   });
 });
 
-describe("custodialNotifyReasons (#44)", () => {
+describe("custodialNotifyReasons (#44, #46)", () => {
   it("lists food and/or large attendance using RISK_POLICY", () => {
     assert.deepEqual(custodialNotifyReasons({ hasFood: true, attendance: 20 }), ["Food service"]);
     assert.deepEqual(
@@ -54,41 +55,52 @@ describe("custodialNotifyReasons (#44)", () => {
   });
 });
 
-describe("custodialNotificationDetails (#44)", () => {
-  it("includes date, time, room, attendance, and reason", () => {
-    assert.deepEqual(
+describe("custodialNotificationDetails (#45)", () => {
+  const base = {
+    date: "2026-10-01",
+    startTime: "14:00",
+    endTime: "16:00",
+    room: "innovation",
+    attendance: 40,
+    hasFood: true,
+  } as const;
+
+  it("includes date, time, room, attendance, reason, and phase task", () => {
+    assert.deepEqual(custodialNotificationDetails(base, "setup", "Innovation Lab"), {
+      phase: "setup",
+      task: "Pre-event setup",
+      date: "2026-10-01",
+      startTime: "14:00",
+      endTime: "16:00",
+      room: "Innovation Lab",
+      attendance: "40",
+      reason: "Food service",
+    });
+    assert.deepEqual(custodialNotificationDetails(base, "cleanup", "Innovation Lab"), {
+      phase: "cleanup",
+      task: "Post-event cleaning",
+      date: "2026-10-01",
+      startTime: "14:00",
+      endTime: "16:00",
+      room: "Innovation Lab",
+      attendance: "40",
+      reason: "Food service",
+    });
+  });
+
+  it("falls back to the room id when no label is given", () => {
+    assert.equal(
       custodialNotificationDetails(
         {
           date: "2026-10-01",
           startTime: "14:00",
           endTime: "16:00",
-          room: "innovation",
-          attendance: 40,
-          hasFood: true,
+          room: "seminar-201",
+          attendance: RISK_POLICY.largeAttendance,
+          hasFood: false,
         },
-        "Innovation Lab",
-      ),
-      {
-        date: "2026-10-01",
-        startTime: "14:00",
-        endTime: "16:00",
-        room: "Innovation Lab",
-        attendance: "40",
-        reason: "Food service",
-      },
-    );
-  });
-
-  it("falls back to the room id when no label is given", () => {
-    assert.equal(
-      custodialNotificationDetails({
-        date: "2026-10-01",
-        startTime: "14:00",
-        endTime: "16:00",
-        room: "seminar-201",
-        attendance: RISK_POLICY.largeAttendance,
-        hasFood: false,
-      }).room,
+        "setup",
+      ).room,
       "seminar-201",
     );
   });
@@ -96,14 +108,15 @@ describe("custodialNotificationDetails (#44)", () => {
 
 /**
  * Mirrors NotificationsApi.notify idempotency without Firestore: one row per
- * reservationId+service, so "re-approve" cannot create duplicates (#44).
+ * reservationId+service+variant, so "re-approve" cannot create duplicates (#45).
  */
 function notifyOnce(
   store: Map<string, ServiceNotification>,
   reservation: { id: string; title: string },
+  phase: (typeof CUSTODIAL_PHASES)[number],
   details: Record<string, string>,
 ): ServiceNotification {
-  const id = notificationId(reservation.id, "custodial");
+  const id = notificationId(reservation.id, "custodial", phase);
   const existing = store.get(id);
   if (existing) return existing;
   const created: ServiceNotification = {
@@ -118,8 +131,8 @@ function notifyOnce(
   return created;
 }
 
-describe("custodial notify idempotency (#44)", () => {
-  it("keeps a single custodial row when approve would notify twice", () => {
+describe("custodial pre/post notify idempotency (#45)", () => {
+  it("keeps one setup and one cleanup row when approve would notify twice", () => {
     const store = new Map<string, ServiceNotification>();
     const reservation = {
       id: "REQ-4001",
@@ -127,28 +140,35 @@ describe("custodial notify idempotency (#44)", () => {
       hasFood: true as const,
       attendance: 30,
     };
-    const details = custodialNotificationDetails({
+    const slot = {
       date: "2026-10-15",
       startTime: "13:00",
       endTime: "15:00",
       room: "seminar-201",
       attendance: reservation.attendance,
       hasFood: reservation.hasFood,
-    });
+    };
 
     assert.equal(shouldNotifyCustodialOnApprove(reservation, "approved"), true);
-    const first = notifyOnce(store, reservation, details);
-    const second = notifyOnce(store, reservation, { ...details, note: "re-approve" });
+    for (const phase of CUSTODIAL_PHASES) {
+      const details = custodialNotificationDetails(slot, phase);
+      const first = notifyOnce(store, reservation, phase, details);
+      const second = notifyOnce(store, reservation, phase, { ...details, note: "re-approve" });
+      assert.equal(first, second);
+    }
 
-    assert.equal(first, second);
-    assert.equal(store.size, 1);
+    assert.equal(store.size, 2);
     assert.equal(
-      store.get(notificationId(reservation.id, "custodial"))?.details.reason,
-      "Food service",
+      store.get(notificationId(reservation.id, "custodial", "setup"))?.details.task,
+      "Pre-event setup",
+    );
+    assert.equal(
+      store.get(notificationId(reservation.id, "custodial", "cleanup"))?.details.task,
+      "Post-event cleaning",
     );
   });
 
-  it("does not open a custodial row when the trigger is false", () => {
+  it("does not open custodial rows when the trigger is false", () => {
     const store = new Map<string, ServiceNotification>();
     const reservation = {
       id: "REQ-4002",
