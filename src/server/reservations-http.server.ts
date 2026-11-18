@@ -21,15 +21,24 @@ export async function readOptionalUser(request: Request): Promise<PublicUser | n
 
 export async function handleListReservations(request: Request): Promise<Response> {
   try {
-    const requester = new URL(request.url).searchParams.get("requester");
+    const params = new URL(request.url).searchParams;
+    const requester = params.get("requester");
+    const from = params.get("from") ?? undefined;
+    const to = params.get("to") ?? undefined;
     if (requester === "me") {
       const { user } = await getAuthApi().requireSession(readCookie(request, SESSION_COOKIE));
-      return json(await getReservationsApi().listReservations({ requesterId: user.id }));
+      return json(
+        await getReservationsApi().listReservations({
+          requesterId: user.id,
+          from,
+          to,
+        }),
+      );
     }
     if (requester !== null) {
       throw new TypeError('Query parameter "requester" must be "me" when set.');
     }
-    return json(await getReservationsApi().listReservations());
+    return json(await getReservationsApi().listReservations({ from, to }));
   } catch (error) {
     return errorResponse(error);
   }

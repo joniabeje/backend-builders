@@ -135,9 +135,12 @@ paths:
       tags: [reservations]
       summary: List reservations
       description: |
-        All reservations, newest `submittedAt` first, each with history and risk.
-        Pass `requester=me` to return only the signed-in user's rows (**401** when
-        signed out). Used by `/dashboard` (#36).
+        All reservations (every status — rejected included; nothing is hard-deleted),
+        newest `submittedAt` first, each with history and risk. Pass `requester=me`
+        to return only the signed-in user's rows (**401** when signed out). Used by
+        `/dashboard` (#36). Optional `from` / `to` filter on the event `date`
+        (inclusive `YYYY-MM-DD`); with a date range, results are newest event date
+        first (#50).
       operationId: listReservations
       parameters:
         - name: requester
@@ -147,6 +150,20 @@ paths:
           schema:
             type: string
             enum: [me]
+        - name: from
+          in: query
+          required: false
+          description: Inclusive lower bound on event `date` (`YYYY-MM-DD`).
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: Inclusive upper bound on event `date` (`YYYY-MM-DD`).
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Reservation list.
