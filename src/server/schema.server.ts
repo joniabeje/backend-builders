@@ -2,6 +2,7 @@
 // users and sessions (#60), and the mapping to the domain types the rest of the app
 // uses. See docs/ARCHITECTURE.md.
 import type { Role } from "@/domain/auth";
+import type { NotificationDetails, NotificationService } from "@/domain/notifications";
 import { isRequestStatus, type EventRequest, type StatusChange } from "@/domain/reservation";
 
 export const COLLECTIONS = {
@@ -13,6 +14,8 @@ export const COLLECTIONS = {
   sessions: "sessions",
   /** Singleton docs such as the reservation id counter (#65). */
   counters: "counters",
+  /** One doc per reservation per service: `{reservationId}_{service}` (#40). */
+  notifications: "notifications",
 } as const;
 
 /** `counters/reservations` — last issued REQ-<n> number for transactional creates (#65). */
@@ -103,4 +106,13 @@ export type SessionDoc = {
   userId: string;
   role: Role;
   expiresAt: string;
+};
+
+/** `notifications/{reservationId}_{service}`. */
+export type NotificationDoc = {
+  service: NotificationService;
+  reservationId: string;
+  title: string;
+  details: NotificationDetails;
+  createdAt: string;
 };
