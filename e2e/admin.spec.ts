@@ -1,8 +1,24 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("/admin", () => {
-  // Playwright sets VITE_USE_MOCKS=true, so the /admin guard treats the session as the
-  // demo admin without hitting Firestore (#61).
+  // Playwright sets VITE_USE_MOCKS=true, so the /admin guard and mock sign-in use the
+  // demo admin without hitting Firestore (#61, #90).
+  test("signs in as admin and lists at least one request", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    // SSR already fills the email defaults; wait for client chrome (Admin link from
+    // useCurrentUser) so the form's onSubmit handler is attached before we click.
+    await expect(
+      page.getByRole("navigation").getByRole("link", { name: "Admin", exact: true }),
+    ).toBeVisible();
+    await page.getByLabel("Email").fill("admin@cea.howard.edu");
+    await page.getByLabel("Password").fill("admin-demo");
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page.getByRole("heading", { name: "Admin Dashboard" })).toBeVisible();
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+  });
+
   test("lists requests with their stored risk and flags those needing review", async ({ page }) => {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Admin Dashboard" })).toBeVisible();
