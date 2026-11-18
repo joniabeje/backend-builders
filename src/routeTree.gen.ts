@@ -15,8 +15,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ApiRoomsRouteImport } from './routes/api/rooms'
 import { Route as ApiReservationsRouteImport } from './routes/api/reservations'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as ApiReservationsIdRouteImport } from './routes/api/reservations.$id'
 import { Route as ApiAuthSignOutRouteImport } from './routes/api/auth/sign-out'
 import { Route as ApiAuthSignInRouteImport } from './routes/api/auth/sign-in'
@@ -53,6 +55,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiRoomsRoute = ApiRoomsRouteImport.update({
   id: '/api/rooms',
   path: '/api/rooms',
@@ -62,6 +69,11 @@ const ApiReservationsRoute = ApiReservationsRouteImport.update({
   id: '/api/reservations',
   path: '/api/reservations',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ApiReservationsIdRoute = ApiReservationsIdRouteImport.update({
   id: '/$id',
@@ -91,13 +103,15 @@ const ApiAnalyticsRoomsRoute = ApiAnalyticsRoomsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/analytics/rooms': typeof ApiAnalyticsRoomsRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/sign-in': typeof ApiAuthSignInRoute
@@ -106,13 +120,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/admin': typeof AdminIndexRoute
   '/api/analytics/rooms': typeof ApiAnalyticsRoomsRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/sign-in': typeof ApiAuthSignInRoute
@@ -122,13 +137,15 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reserve': typeof ReserveRoute
   '/rooms': typeof RoomsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/api/reservations': typeof ApiReservationsRouteWithChildren
   '/api/rooms': typeof ApiRoomsRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/analytics/rooms': typeof ApiAnalyticsRoomsRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/sign-in': typeof ApiAuthSignInRoute
@@ -144,8 +161,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reserve'
     | '/rooms'
+    | '/admin/analytics'
     | '/api/reservations'
     | '/api/rooms'
+    | '/admin/'
     | '/api/analytics/rooms'
     | '/api/auth/me'
     | '/api/auth/sign-in'
@@ -154,13 +173,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/dashboard'
     | '/login'
     | '/reserve'
     | '/rooms'
+    | '/admin/analytics'
     | '/api/reservations'
     | '/api/rooms'
+    | '/admin'
     | '/api/analytics/rooms'
     | '/api/auth/me'
     | '/api/auth/sign-in'
@@ -174,8 +194,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reserve'
     | '/rooms'
+    | '/admin/analytics'
     | '/api/reservations'
     | '/api/rooms'
+    | '/admin/'
     | '/api/analytics/rooms'
     | '/api/auth/me'
     | '/api/auth/sign-in'
@@ -185,7 +207,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   ReserveRoute: typeof ReserveRoute
@@ -242,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/rooms': {
       id: '/api/rooms'
       path: '/api/rooms'
@@ -255,6 +284,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/reservations'
       preLoaderRoute: typeof ApiReservationsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/api/reservations/$id': {
       id: '/api/reservations/$id'
@@ -294,6 +330,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface ApiReservationsRouteChildren {
   ApiReservationsIdRoute: typeof ApiReservationsIdRoute
 }
@@ -308,7 +356,7 @@ const ApiReservationsRouteWithChildren = ApiReservationsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   ReserveRoute: ReserveRoute,
