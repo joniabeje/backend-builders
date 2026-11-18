@@ -9,6 +9,7 @@ import { validateReservation, type ReservationForm } from "@/domain/reservation-
 import { checkSlotAvailability, type ReservationsLoadState } from "@/domain/room-availability";
 import { recommendRooms } from "@/domain/room-recommendation";
 import type { EventRequest } from "@/domain/reservation";
+import { reservationSubmitErrorMessage } from "@/hooks/reservation-submit-error";
 import { useCreateReservation, useReservations } from "@/hooks/use-reservations";
 import { ROOMS } from "@/lib/rooms";
 
@@ -93,12 +94,16 @@ export function useReservationForm() {
     dispatch({ type: "reset" });
   }, [clearSaveError]);
 
+  const saveError = createReservation.error;
   return {
     form,
     submittedId,
     isSubmitting: createReservation.isPending,
-    /** Why the last save failed, or null. The form keeps everything the user typed. */
-    submitError: createReservation.error,
+    /**
+     * Why the last save failed, or null. 409s use the same "already booked" copy as
+     * live validation (#66). The form keeps everything the user typed.
+     */
+    submitErrorMessage: saveError ? reservationSubmitErrorMessage(saveError, form, ROOMS) : null,
     validation: { ...validation, canSubmit },
     availabilityStatus,
     availableRooms,

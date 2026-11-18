@@ -166,3 +166,15 @@ export function describeConflicts(conflicts: readonly BookedSlot[]): string {
     .map((conflict) => `${conflict.startTime}–${conflict.endTime} (${conflict.id})`)
     .join(", ");
 }
+
+/**
+ * Same wording as the live form's `room-conflict` issue (#66). Used for client-side
+ * validation and when the API returns 409.
+ */
+export function roomConflictMessage(
+  roomName: string,
+  date: string,
+  conflicts: readonly BookedSlot[],
+): string {
+  return `${roomName} is already booked on ${date} at ${describeConflicts(conflicts)}. Choose another room or time.`;
+}

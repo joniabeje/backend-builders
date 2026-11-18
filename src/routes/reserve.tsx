@@ -66,7 +66,7 @@ function ReservePage() {
     form,
     submittedId,
     isSubmitting,
-    submitError,
+    submitErrorMessage,
     validation,
     availabilityStatus,
     availableRooms,
@@ -290,13 +290,13 @@ function ReservePage() {
               </div>
             </FormSection>
 
-            {submitError && (
+            {submitErrorMessage && (
               <p
                 role="alert"
                 className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
               >
-                Your request was not submitted: {submitError.message} Your answers are still here,
-                so you can fix the problem and submit again.
+                Your request was not submitted: {submitErrorMessage} Your answers are still here, so
+                you can fix the problem and submit again.
               </p>
             )}
 

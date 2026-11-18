@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import type { RequestStatus } from "./reservation.ts";
 import {
   checkSlotAvailability,
+  describeConflicts,
   findConflicts,
   findReservationInProgress,
   getRoomAvailability,
   isCompleteSlot,
+  roomConflictMessage,
   timeRangesOverlap,
   type BookedSlot,
   type RequestedSlot,
@@ -214,6 +216,16 @@ describe("findReservationInProgress", () => {
         booking({ status: "rejected" }),
       ]),
       undefined,
+    );
+  });
+});
+
+describe("roomConflictMessage", () => {
+  it("matches the live form room-conflict wording", () => {
+    const conflicts = [booking({ id: "REQ-1040", startTime: "12:30", endTime: "14:00" })];
+    assert.equal(
+      roomConflictMessage("Seminar Room 201", "2026-11-04", conflicts),
+      `Seminar Room 201 is already booked on 2026-11-04 at ${describeConflicts(conflicts)}. Choose another room or time.`,
     );
   });
 });
