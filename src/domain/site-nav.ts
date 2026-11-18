@@ -1,4 +1,4 @@
-// Which header links to show for the signed-in role (#89).
+// Which header links to show for the signed-in role (#89, #38).
 import { adminAccess } from "./admin-access";
 import type { PublicUser } from "./auth";
 
@@ -7,16 +7,20 @@ export type SiteNavLink = {
   readonly label: string;
 };
 
-const BASE_LINKS: readonly SiteNavLink[] = [
+const PUBLIC_LINKS: readonly SiteNavLink[] = [
   { to: "/", label: "Home" },
   { to: "/rooms", label: "Rooms" },
-  { to: "/dashboard", label: "My Requests" },
 ];
 
+const MY_REQUESTS_LINK: SiteNavLink = { to: "/dashboard", label: "My Requests" };
 const ADMIN_LINK: SiteNavLink = { to: "/admin", label: "Admin" };
 
-/** Home / Rooms / My Requests for everyone; Admin only when `adminAccess` is ok. */
+/**
+ * Home / Rooms for everyone. My Requests only when signed in (#38).
+ * Admin only when `adminAccess` is ok (#89).
+ */
 export function siteNavLinks(user: PublicUser | null): readonly SiteNavLink[] {
-  if (adminAccess(user) === "ok") return [...BASE_LINKS, ADMIN_LINK];
-  return BASE_LINKS;
+  if (!user) return PUBLIC_LINKS;
+  if (adminAccess(user) === "ok") return [...PUBLIC_LINKS, MY_REQUESTS_LINK, ADMIN_LINK];
+  return [...PUBLIC_LINKS, MY_REQUESTS_LINK];
 }
