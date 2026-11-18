@@ -11,7 +11,16 @@ export const COLLECTIONS = {
   history: "history",
   users: "users",
   sessions: "sessions",
+  /** Singleton docs such as the reservation id counter (#65). */
+  counters: "counters",
 } as const;
+
+/** `counters/reservations` — last issued REQ-<n> number for transactional creates (#65). */
+export const RESERVATION_COUNTER_ID = "reservations";
+
+export type ReservationCounterDoc = {
+  lastNumber: number;
+};
 
 /** `rooms/{roomId}`. The id is the stable room id, e.g. "seminar-201". */
 export type RoomDoc = {

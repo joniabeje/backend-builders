@@ -75,15 +75,16 @@ flowchart LR
 
 ## Data model
 
-| Collection                  | Holds                                                                                                      | Written by                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `rooms`                     | id, name, building, capacity, features                                                                     | seed script (#58)                |
-| `reservations`              | request fields, `requesterId`, status, risk (`level`, `score`, `requiresReview`, `factors`), `submittedAt` | `POST` and `PATCH /reservations` |
-| `reservations/{id}/history` | one document per status change: from, to, actor, feedback, at                                              | `PATCH /reservations/:id` (#85)  |
-| `users`                     | email, name, role, password hash and salt                                                                  | seed script (#60)                |
-| `sessions`                  | userId, role, expiresAt (ISO); id is the `cea_session` cookie value                                        | `POST /api/auth/sign-in` (#60)   |
-| `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                   |
+| Collection                  | Holds                                                                                                      | Written by                        |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `rooms`                     | id, name, building, capacity, features                                                                     | seed script (#58)                 |
+| `reservations`              | request fields, `requesterId`, status, risk (`level`, `score`, `requiresReview`, `factors`), `submittedAt` | `POST` and `PATCH /reservations`  |
+| `reservations/{id}/history` | one document per status change: from, to, actor, feedback, at                                              | `PATCH /reservations/:id` (#85)   |
+| `users`                     | email, name, role, password hash and salt                                                                  | seed script (#60)                 |
+| `sessions`                  | userId, role, expiresAt (ISO); id is the `cea_session` cookie value                                        | `POST /api/auth/sign-in` (#60)    |
+| `counters/reservations`     | `lastNumber` for `REQ-<n>` ids                                                                             | seed + transactional create (#65) |
+| `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                    |
 
 Reservations are never deleted, including rejected ones, so history and analytics stay complete (#50).
 
-**Indexes** (`firestore.indexes.json`). Firestore indexes every single field automatically, which covers the double-booking check (`room` and `date` equality), the date-range query on `date` (#50) and ordering history by `at`. The one composite index is `requesterId` + `submittedAt` descending, for "my requests, newest first" on `/dashboard` (#36). Add an index here in the same PR as any new query that filters on one field and sorts on another.
+**Indexes** (`firestore.indexes.json`). Composite indexes: `requesterId` + `submittedAt` descending for "my requests" (#36), and `room` + `date` for the transactional double-booking query (#65). Single-field indexes cover the date-range query on `date` (#50) and ordering history by `at`. Add an index here in the same PR as any new query that filters on one field and sorts on another.
