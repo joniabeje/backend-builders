@@ -1,5 +1,5 @@
 // Notifications module (#40): notify(service, reservation, details) stores at most one
-// row per reservation per service. Listing by service supports the service-desk views.
+// row per reservation per service. The default delivery adapter logs to the console (#41).
 import type { Firestore } from "firebase-admin/firestore";
 import {
   isNotificationService,
@@ -10,24 +10,39 @@ import {
 } from "@/domain/notifications";
 import type { EventRequest } from "@/domain/reservation";
 import { getDb } from "./firestore.server";
+import {
+  createNotificationDelivery,
+  type NotificationDelivery,
+} from "./notification-delivery.server";
 import { COLLECTIONS, type NotificationDoc } from "./schema.server";
 
 export type NotificationsApiOptions = {
   now?: () => Date;
+  /** Called only when a new row is written — not on idempotent re-notify (#41). */
+  delivery?: NotificationDelivery;
 };
 
 export class NotificationsApi {
   private readonly db: Firestore;
   private readonly now: () => Date;
+  private readonly delivery: NotificationDelivery;
 
-  constructor(db: Firestore = getDb(), { now = () => new Date() }: NotificationsApiOptions = {}) {
+  constructor(
+    db: Firestore = getDb(),
+    {
+      now = () => new Date(),
+      delivery = createNotificationDelivery(),
+    }: NotificationsApiOptions = {},
+  ) {
     this.db = db;
     this.now = now;
+    this.delivery = delivery;
   }
 
   /**
-   * Stores a notification for `service`. If that reservation already notified the
-   * service, returns the existing row and writes nothing (idempotent for #42/#43).
+   * Stores a notification for `service` and delivers it (console by default). If that
+   * reservation already notified the service, returns the existing row with no write
+   * and no second delivery (idempotent for #42/#43).
    */
   async notify(
     service: NotificationService,
@@ -52,7 +67,9 @@ export class NotificationsApi {
       createdAt: this.now().toISOString(),
     };
     await ref.create(doc);
-    return fromNotificationDoc(id, doc);
+    const created = fromNotificationDoc(id, doc);
+    await this.delivery.deliver(created);
+    return created;
   }
 
   /** All notifications for one service, newest first. */

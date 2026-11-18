@@ -1,7 +1,8 @@
 import { beforeEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { notificationId } from "@/domain/notifications";
+import { notificationId, type ServiceNotification } from "@/domain/notifications";
 import { getDb } from "./firestore.server";
+import type { NotificationDelivery } from "./notification-delivery.server";
 import { NotificationsApi } from "./notifications.server";
 import { clearEmulator } from "./testing/emulator";
 
@@ -14,17 +15,30 @@ const DETAILS = {
   equipment: "projector",
 };
 
-describe("NotificationsApi (#40)", () => {
+function recordingDelivery(): NotificationDelivery & { delivered: ServiceNotification[] } {
+  const delivered: ServiceNotification[] = [];
+  return {
+    delivered,
+    deliver(notification) {
+      delivered.push(notification);
+    },
+  };
+}
+
+describe("NotificationsApi (#40, #41)", () => {
   let api: NotificationsApi;
+  let delivery: ReturnType<typeof recordingDelivery>;
 
   beforeEach(async () => {
     await clearEmulator();
+    delivery = recordingDelivery();
     api = new NotificationsApi(getDb(), {
       now: () => new Date("2026-11-17T20:00:00.000Z"),
+      delivery,
     });
   });
 
-  it("stores a notification and lists it by service", async () => {
+  it("stores a notification, delivers it once, and lists it by service", async () => {
     const created = await api.notify("it", RESERVATION, DETAILS);
     assert.equal(created.id, notificationId(RESERVATION.id, "it"));
     assert.equal(created.service, "it");
@@ -32,6 +46,7 @@ describe("NotificationsApi (#40)", () => {
     assert.equal(created.title, RESERVATION.title);
     assert.deepEqual(created.details, DETAILS);
     assert.equal(created.createdAt, "2026-11-17T20:00:00.000Z");
+    assert.deepEqual(delivery.delivered, [created]);
 
     const listed = await api.listByService("it");
     assert.equal(listed.length, 1);
@@ -47,6 +62,7 @@ describe("NotificationsApi (#40)", () => {
     });
     assert.deepEqual(second, first);
     assert.equal((await api.listByService("security")).length, 1);
+    assert.equal(delivery.delivered.length, 1);
   });
 
   it("keeps separate rows for different services on the same reservation", async () => {
@@ -54,5 +70,6 @@ describe("NotificationsApi (#40)", () => {
     await api.notify("custodial", RESERVATION, { ...DETAILS, reason: "food" });
     assert.equal((await api.listByService("it")).length, 1);
     assert.equal((await api.listByService("custodial")).length, 1);
+    assert.equal(delivery.delivered.length, 2);
   });
 });
