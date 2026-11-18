@@ -8,27 +8,45 @@ import type { ReviewInput } from "@/domain/review-decision";
 const reservationKeys = {
   all: ["reservations"] as const,
   list: () => [...reservationKeys.all, "list"] as const,
+  mine: () => [...reservationKeys.all, "list", "mine"] as const,
 };
 
 /** How often an open page re-reads the list, so admin decisions reach /dashboard (#37). */
 export const RESERVATIONS_REFRESH_INTERVAL_MS = 30_000;
 
+const listRefresh = {
+  refetchInterval: RESERVATIONS_REFRESH_INTERVAL_MS,
+  refetchIntervalInBackground: false,
+  refetchOnWindowFocus: true,
+} as const;
+
 /**
- * The reservation list query shared by /dashboard, /admin, /rooms and the form.
+ * The reservation list query shared by /admin, /rooms and the form.
  * Refetches on an interval and when the tab regains focus; a hidden tab does not poll.
  */
 export function reservationListQueryOptions(repository: ReservationRepository) {
   return queryOptions({
     queryKey: reservationKeys.list(),
     queryFn: () => repository.list(),
-    refetchInterval: RESERVATIONS_REFRESH_INTERVAL_MS,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
+    ...listRefresh,
+  });
+}
+
+/** Signed-in requester's own rows for /dashboard (#36). */
+export function myReservationListQueryOptions(repository: ReservationRepository) {
+  return queryOptions({
+    queryKey: reservationKeys.mine(),
+    queryFn: () => repository.listMine(),
+    ...listRefresh,
   });
 }
 
 export function useReservations() {
   return useQuery(reservationListQueryOptions(useReservationRepository()));
+}
+
+export function useMyReservations() {
+  return useQuery(myReservationListQueryOptions(useReservationRepository()));
 }
 
 /**
@@ -44,6 +62,9 @@ export function useCreateReservation() {
     mutationFn: (input: NewReservation) => repository.create(input),
     onSuccess: (created) => {
       queryClient.setQueryData<EventRequest[]>(reservationKeys.list(), (current) =>
+        current ? [created, ...current] : current,
+      );
+      queryClient.setQueryData<EventRequest[]>(reservationKeys.mine(), (current) =>
         current ? [created, ...current] : current,
       );
     },

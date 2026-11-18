@@ -37,6 +37,13 @@ export class ApiReservationRepository implements ReservationRepository {
     return (await readBody(response)) as EventRequest[];
   }
 
+  async listMine(): Promise<EventRequest[]> {
+    const response = await this.fetchImpl(this.url("/api/reservations?requester=me"), {
+      credentials: "include",
+    });
+    return (await readBody(response)) as EventRequest[];
+  }
+
   async create(input: NewReservation): Promise<EventRequest> {
     const response = await this.fetchImpl(this.url("/api/reservations"), {
       method: "POST",

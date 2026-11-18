@@ -51,6 +51,11 @@ export class InMemoryReservationRepository implements ReservationRepository {
     return Array.from(this.reservations.values(), copy);
   }
 
+  /** Mock store has no per-user ids; Playwright dashboard sees the shared seed (#36). */
+  async listMine(): Promise<EventRequest[]> {
+    return this.list();
+  }
+
   async create(input: NewReservation): Promise<EventRequest> {
     const slot = {
       roomId: input.room,
