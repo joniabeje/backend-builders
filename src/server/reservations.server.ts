@@ -14,6 +14,7 @@ import {
   type RoomCapacity,
 } from "@/domain/reservation-validation";
 import {
+  CUSTODIAL_PHASES,
   custodialNotificationDetails,
   shouldNotifyCustodialOnApprove,
 } from "@/domain/custodial-notification";
@@ -207,11 +208,15 @@ export class ReservationsApi {
     }
 
     if (shouldNotifyCustodialOnApprove(updated, input.decision)) {
-      await this.notifications.notify(
-        "custodial",
-        updated,
-        custodialNotificationDetails(updated, getRoomDisplayName(updated.room)),
-      );
+      const roomLabel = getRoomDisplayName(updated.room);
+      for (const phase of CUSTODIAL_PHASES) {
+        await this.notifications.notify(
+          "custodial",
+          updated,
+          custodialNotificationDetails(updated, phase, roomLabel),
+          { variant: phase },
+        );
+      }
     }
 
     return updated;

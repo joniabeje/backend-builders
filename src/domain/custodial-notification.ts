@@ -1,10 +1,20 @@
-// When to notify custodial on approval, and which details to send (#44).
+// When to notify custodial on approval, and which details to send (#44 / #45).
 import type { NotificationDetails } from "./notifications";
 import type { EventRequest } from "./reservation";
 import type { ReviewDecision } from "./review-decision";
 import { RISK_POLICY } from "./risk";
 
-/** Approved requests with food or large attendance get a custodial notification (#44). */
+/** Pre-event setup and post-event cleaning — one notify row each (#45). */
+export const CUSTODIAL_PHASES = ["setup", "cleanup"] as const;
+
+export type CustodialPhase = (typeof CUSTODIAL_PHASES)[number];
+
+const PHASE_TASK: Record<CustodialPhase, string> = {
+  setup: "Pre-event setup",
+  cleanup: "Post-event cleaning",
+};
+
+/** Approved requests with food or large attendance get custodial notifications (#44). */
 export function shouldNotifyCustodialOnApprove(
   reservation: Pick<EventRequest, "hasFood" | "attendance">,
   decision: ReviewDecision,
@@ -29,7 +39,8 @@ export function custodialNotifyReasons(
 }
 
 /**
- * Payload for `notify("custodial", …)`: date, time, room, attendance, and why.
+ * Payload for one custodial phase (`setup` or `cleanup`): date, time, room,
+ * attendance, reason, and the phase task label (#45).
  * `roomLabel` should be the human-readable room name when available.
  */
 export function custodialNotificationDetails(
@@ -37,9 +48,12 @@ export function custodialNotificationDetails(
     EventRequest,
     "date" | "startTime" | "endTime" | "room" | "attendance" | "hasFood"
   >,
+  phase: CustodialPhase,
   roomLabel: string = reservation.room,
 ): NotificationDetails {
   return {
+    phase,
+    task: PHASE_TASK[phase],
     date: reservation.date,
     startTime: reservation.startTime,
     endTime: reservation.endTime,

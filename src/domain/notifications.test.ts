@@ -13,4 +13,9 @@ describe("notifications domain", () => {
     assert.equal(notificationId("REQ-1043", "it"), "REQ-1043_it");
     assert.equal(notificationId("REQ-1043", "custodial"), "REQ-1043_custodial");
   });
+
+  it("appends an optional variant for multi-row services (#45)", () => {
+    assert.equal(notificationId("REQ-1043", "custodial", "setup"), "REQ-1043_custodial_setup");
+    assert.equal(notificationId("REQ-1043", "custodial", "cleanup"), "REQ-1043_custodial_cleanup");
+  });
 });

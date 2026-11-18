@@ -41,18 +41,19 @@ export class NotificationsApi {
 
   /**
    * Stores a notification for `service` and delivers it (console by default). If that
-   * reservation already notified the service, returns the existing row with no write
-   * and no second delivery (idempotent for #42/#43).
+   * reservation already notified the service (and optional `variant`), returns the
+   * existing row with no write and no second delivery (idempotent for #42/#43/#45).
    */
   async notify(
     service: NotificationService,
     reservation: Pick<EventRequest, "id" | "title">,
     details: NotificationDetails,
+    options?: { variant?: string },
   ): Promise<ServiceNotification> {
     if (!isNotificationService(service)) {
       throw new TypeError(`Unknown notification service: ${String(service)}`);
     }
-    const id = notificationId(reservation.id, service);
+    const id = notificationId(reservation.id, service, options?.variant);
     const ref = this.db.collection(COLLECTIONS.notifications).doc(id);
     const existing = await ref.get();
     if (existing.exists) {
