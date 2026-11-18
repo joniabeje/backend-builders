@@ -15,6 +15,7 @@ flowchart LR
 - Pages read and write through the `ReservationRepository` interface (`src/data/`). The default is `ApiReservationRepository` against `/api` (#57). Set `VITE_USE_MOCKS=true` for the in-memory seed (Playwright, Lovable preview).
 - HTTP endpoints live under `/api` (`GET/POST /api/reservations`, `GET/PATCH /api/reservations/:id`, `GET /api/rooms`) and call `ReservationsApi` in `src/server/reservations.server.ts` (#55). Create runs `validateReservation` (400), `findConflicts` (409, transactional in #65) and stores server-computed risk. A 409 is shown on `/reserve` with the same “already booked” copy as live validation and does not clear the form (#66). Overlap → 409 and back-to-back → allowed are covered in integration/HTTP tests (#67). The OpenAPI contract is `docs/openapi.yaml` (#56).
 - Every business rule lives once in `src/domain/` and runs in both places: in the browser for live feedback, and on the server as the check that counts.
+- Service desk alerts go through `NotificationsApi.notify(service, reservation, details)` (`it` | `custodial` | `security`), stored under `notifications/{reservationId}_{service}` and listable by service (#40). Approval triggers and the console adapter land in #41/#42.
 - The browser never talks to Firestore directly. Only the server does, with the Admin SDK.
 
 ## ADR-1: Cloud Firestore for data
@@ -75,15 +76,15 @@ flowchart LR
 
 ## Data model
 
-| Collection                  | Holds                                                                                                      | Written by                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `rooms`                     | id, name, building, capacity, features                                                                     | seed script (#58)                 |
-| `reservations`              | request fields, `requesterId`, status, risk (`level`, `score`, `requiresReview`, `factors`), `submittedAt` | `POST` and `PATCH /reservations`  |
-| `reservations/{id}/history` | one document per status change: from, to, actor, feedback, at                                              | `PATCH /reservations/:id` (#85)   |
-| `users`                     | email, name, role, password hash and salt                                                                  | seed script (#60)                 |
-| `sessions`                  | userId, role, expiresAt (ISO); id is the `cea_session` cookie value                                        | `POST /api/auth/sign-in` (#60)    |
-| `counters/reservations`     | `lastNumber` for `REQ-<n>` ids                                                                             | seed + transactional create (#65) |
-| `notifications`             | id `{reservationId}_{service}`, so each request notifies each service at most once                         | approval (#40)                    |
+| Collection                  | Holds                                                                                                        | Written by                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| `rooms`                     | id, name, building, capacity, features                                                                       | seed script (#58)                 |
+| `reservations`              | request fields, `requesterId`, status, risk (`level`, `score`, `requiresReview`, `factors`), `submittedAt`   | `POST` and `PATCH /reservations`  |
+| `reservations/{id}/history` | one document per status change: from, to, actor, feedback, at                                                | `PATCH /reservations/:id` (#85)   |
+| `users`                     | email, name, role, password hash and salt                                                                    | seed script (#60)                 |
+| `sessions`                  | userId, role, expiresAt (ISO); id is the `cea_session` cookie value                                          | `POST /api/auth/sign-in` (#60)    |
+| `counters/reservations`     | `lastNumber` for `REQ-<n>` ids                                                                               | seed + transactional create (#65) |
+| `notifications`             | id `{reservationId}_{service}`, service, title, details, createdAt — at most one row per request per service | `NotificationsApi.notify` (#40)   |
 
 Reservations are never deleted, including rejected ones, so history and analytics stay complete (#50).
 
